@@ -1,0 +1,44 @@
+# Bug Bounty Hunter Pro - Python Dependencies
+
+# GUI Framework
+PyQt6>=6.4.0
+
+# HTTP Requests
+requests>=2.28.0
+
+# OWASP ZAP Integration
+python-owasp-zap-v2.4>=0.1.0
+
+# WebSocket Support
+websockets>=10.4
+
+# Cryptography and Authentication
+bcrypt>=4.0.0
+PyJWT>=2.6.0
+cryptography>=38.0.0
+
+# Web Scraping and Parsing
+beautifulsoup4>=4.11.0
+lxml>=4.9.0
+
+# Network Tools
+dnspython>=2.2.0
+python-nmap>=0.7.1
+
+# Packaging (for creating executables)
+pyinstaller
+
+# Additional Security Tools
+scapy>=2.4.5
+
+# JSON and Data Processing
+jsonschema>=4.17.0
+
+# Logging and Monitoring
+colorlog>=6.7.0
+
+# HTTP Server (for webhook testing)
+flask>=2.2.0
+
+# Testing (development)
+pytest>=7.2.0

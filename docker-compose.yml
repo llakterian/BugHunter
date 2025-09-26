@@ -1,0 +1,245 @@
+version: '3.8'
+
+services:
+  # Main Bug Bounty Hunter Pro Application
+  bughunter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: bughunterpro/bug-bounty-hunter:latest
+    container_name: bughunter-pro
+    restart: unless-stopped
+    environment:
+      - DISPLAY=:99
+      - PYTHONUNBUFFERED=1
+      - BBH_ENV=production
+      - BBH_LOG_LEVEL=INFO
+    volumes:
+      # Persistent data storage
+      - bughunter_data:/app/data
+      - bughunter_reports:/app/reports
+      - bughunter_logs:/app/logs
+      # Custom wordlists (optional)
+      - ./wordlists/custom:/app/wordlists/custom:ro
+      # Configuration (optional)
+      - ./config:/app/config:ro
+    ports:
+      - "8080:8080"  # Future web interface
+      - "5900:5900"  # VNC access (optional)
+    networks:
+      - bughunter-network
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW  # For network scanning
+      - NET_ADMIN  # For advanced network operations
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  # Redis for caching and session management (future use)
+  redis:
+    image: redis:7-alpine
+    container_name: bughunter-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-bughunter2024}
+    volumes:
+      - redis_data:/data
+    networks:
+      - bughunter-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL for advanced data storage (future use)
+  postgres:
+    image: postgres:15-alpine
+    container_name: bughunter-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=bughunter
+      - POSTGRES_USER=bughunter
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-bughunter2024}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - bughunter-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bughunter -d bughunter"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx reverse proxy (future web interface)
+  nginx:
+    image: nginx:alpine
+    container_name: bughunter-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - bughunter_reports:/var/www/reports:ro
+    networks:
+      - bughunter-network
+    depends_on:
+      - bughunter
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Elasticsearch for log analysis (optional)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: bughunter-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - bughunter-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - analytics
+
+  # Kibana for log visualization (optional)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: bughunter-kibana
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - bughunter-network
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - analytics
+
+  # Prometheus for monitoring (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bughunter-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - bughunter-network
+    profiles:
+      - monitoring
+
+  # Grafana for metrics visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bughunter-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-bughunter2024}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - bughunter-network
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+  # VNC Server for GUI access (optional)
+  vnc:
+    image: consol/ubuntu-xfce-vnc:latest
+    container_name: bughunter-vnc
+    restart: unless-stopped
+    environment:
+      - VNC_PW=${VNC_PASSWORD:-bughunter}
+      - VNC_RESOLUTION=1920x1080
+    volumes:
+      - vnc_data:/headless
+      - bughunter_reports:/app/reports:ro
+    ports:
+      - "6901:6901"  # noVNC web interface
+      - "5901:5901"  # VNC port
+    networks:
+      - bughunter-network
+    profiles:
+      - gui
+
+networks:
+  bughunter-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  # Application data
+  bughunter_data:
+    driver: local
+  bughunter_reports:
+    driver: local
+  bughunter_logs:
+    driver: local
+  
+  # Database data
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  
+  # Analytics data
+  elasticsearch_data:
+    driver: local
+  
+  # Monitoring data
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  
+  # GUI data
+  vnc_data:
+    driver: local
