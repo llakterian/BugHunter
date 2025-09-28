@@ -171,6 +171,13 @@ class TestScannerEngine(unittest.TestCase):
         # Mock HTTP responses
         m.get('http://example.com/admin', status_code=200, text='Admin Panel')
         m.get('http://example.com/test', status_code=404, text='Not Found')
+        m.get('http://example.com/nonexistent', status_code=404, text='Not Found')
+        
+        # Initialize scan config
+        self.scanner_engine.scan_config = {
+            'target_url': 'http://example.com',
+            'timeout': 30
+        }
         
         # Test directory fuzzing
         result = self.scanner_engine._test_directory('http://example.com', 'admin')

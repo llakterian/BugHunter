@@ -1,0 +1,21 @@
+; ls
+| ls
+& ls
+&& ls
+|| ls
+; dir
+| dir
+& dir
+&& dir
+|| dir
+; cat /etc/passwd
+| cat /etc/passwd
+; type C:\Windows\System32\drivers\etc\hosts
+| type C:\Windows\System32\drivers\etc\hosts
+`ls`
+$(ls)
+${ls}
+; whoami
+| whoami
+; id
+| id

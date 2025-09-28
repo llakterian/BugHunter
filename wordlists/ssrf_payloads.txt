@@ -1,0 +1,13 @@
+http://localhost
+http://127.0.0.1
+http://0.0.0.0
+http://[::1]
+http://169.254.169.254
+http://metadata.google.internal
+http://169.254.169.254/latest/meta-data/
+file:///etc/passwd
+file:///C:/Windows/System32/drivers/etc/hosts
+gopher://127.0.0.1:80
+dict://127.0.0.1:11211
+ftp://127.0.0.1
+ldap://127.0.0.1
