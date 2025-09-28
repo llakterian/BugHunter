@@ -42,7 +42,17 @@ class EducationalDisclaimerDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Educational Use Only - Important Notice")
         self.setModal(True)
-        self.setFixedSize(600, 400)
+        
+        # Make dialog responsive
+        if parent:
+            parent_size = parent.size()
+            dialog_width = min(max(int(parent_size.width() * 0.6), 500), 700)
+            dialog_height = min(max(int(parent_size.height() * 0.6), 400), 600)
+        else:
+            dialog_width, dialog_height = 600, 450
+        
+        self.resize(dialog_width, dialog_height)
+        self.setMinimumSize(500, 400)
         
         layout = QVBoxLayout()
         
@@ -242,13 +252,15 @@ class EnhancedDesktopApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Bug Bounty Hunter Pro - Enhanced Edition (Educational Use Only)")
-        self.setGeometry(100, 100, 1400, 900)
         
         # Initialize components
         self.config_manager = ConfigManager()
         self.auth_manager = AuthManager("data/users.json")
         self.current_scan_worker = None
         self.scan_results = {}
+        
+        # Setup responsive window sizing
+        self.setup_responsive_window()
         
         # Show educational disclaimer
         if not self.show_educational_disclaimer():
@@ -265,6 +277,37 @@ class EnhancedDesktopApp(QMainWindow):
         
         # Load settings
         self.load_settings()
+    
+    def setup_responsive_window(self):
+        """Setup responsive window sizing based on screen resolution"""
+        # Get screen geometry
+        screen = QApplication.primaryScreen()
+        screen_geometry = screen.availableGeometry()
+        screen_width = screen_geometry.width()
+        screen_height = screen_geometry.height()
+        
+        # Calculate responsive dimensions
+        # Use 85% of screen width and 80% of screen height, with reasonable limits
+        target_width = min(max(int(screen_width * 0.85), 1000), 1600)  # Min 1000px, Max 1600px
+        target_height = min(max(int(screen_height * 0.80), 700), 1200)  # Min 700px, Max 1200px
+        
+        # Center the window
+        x = (screen_width - target_width) // 2
+        y = (screen_height - target_height) // 2
+        
+        # Set window geometry
+        self.setGeometry(x, y, target_width, target_height)
+        
+        # Set minimum size to ensure usability
+        self.setMinimumSize(900, 600)
+        
+        # Enable window resizing
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMaximizeButtonHint)
+        
+        # Store original size for settings
+        self.default_size = QSize(target_width, target_height)
+        
+        print(f"[INFO] Screen: {screen_width}x{screen_height}, Window: {target_width}x{target_height}")
     
     def show_educational_disclaimer(self) -> bool:
         """Show educational disclaimer dialog"""
@@ -291,13 +334,27 @@ class EnhancedDesktopApp(QMainWindow):
         right_panel = self.create_right_panel()
         splitter.addWidget(right_panel)
         
-        # Set splitter proportions
-        splitter.setSizes([400, 1000])
+        # Set splitter proportions based on window size
+        window_width = self.width()
+        left_width = min(max(int(window_width * 0.3), 350), 500)  # 30% of window, min 350px, max 500px
+        right_width = window_width - left_width
+        splitter.setSizes([left_width, right_width])
+        
+        # Make splitter handle more visible
+        splitter.setHandleWidth(3)
     
     def create_left_panel(self) -> QWidget:
-        """Create left configuration panel"""
+        """Create left configuration panel with scrollable content"""
+        # Create scroll area for left panel
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        
+        # Create the actual panel content
         panel = QWidget()
         layout = QVBoxLayout(panel)
+        layout.setSpacing(10)  # Add spacing between groups
         
         # Target configuration
         target_group = QGroupBox("🎯 Target Configuration")
@@ -335,21 +392,37 @@ class EnhancedDesktopApp(QMainWindow):
         scan_group = QGroupBox("🔍 Scan Types")
         scan_layout = QVBoxLayout(scan_group)
         
-        self.xss_scan_btn = QPushButton("🚨 XSS Vulnerability Scan")
-        self.xss_scan_btn.clicked.connect(lambda: self.start_scan("xss"))
-        scan_layout.addWidget(self.xss_scan_btn)
+        # Create responsive buttons with consistent sizing
+        buttons = [
+            ("🚨 XSS Vulnerability Scan", lambda: self.start_scan("xss")),
+            ("🔗 URL Discovery (GAU)", lambda: self.start_scan("url_discovery")),
+            ("🔐 Secrets Hunting", lambda: self.start_scan("secrets_hunting")),
+            ("🎯 Comprehensive Scan", lambda: self.start_scan("comprehensive"))
+        ]
         
-        self.url_discovery_btn = QPushButton("🔗 URL Discovery (GAU)")
-        self.url_discovery_btn.clicked.connect(lambda: self.start_scan("url_discovery"))
-        scan_layout.addWidget(self.url_discovery_btn)
+        self.scan_buttons = []
+        for text, callback in buttons:
+            btn = QPushButton(text)
+            btn.clicked.connect(callback)
+            btn.setMinimumHeight(35)  # Consistent button height
+            btn.setStyleSheet("""
+                QPushButton {
+                    text-align: left;
+                    padding: 8px 12px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #404040;
+                }
+            """)
+            scan_layout.addWidget(btn)
+            self.scan_buttons.append(btn)
         
-        self.secrets_btn = QPushButton("🔐 Secrets Hunting")
-        self.secrets_btn.clicked.connect(lambda: self.start_scan("secrets_hunting"))
-        scan_layout.addWidget(self.secrets_btn)
-        
-        self.comprehensive_btn = QPushButton("🎯 Comprehensive Scan")
-        self.comprehensive_btn.clicked.connect(lambda: self.start_scan("comprehensive"))
-        scan_layout.addWidget(self.comprehensive_btn)
+        # Store button references for easy access
+        self.xss_scan_btn = self.scan_buttons[0]
+        self.url_discovery_btn = self.scan_buttons[1]
+        self.secrets_btn = self.scan_buttons[2]
+        self.comprehensive_btn = self.scan_buttons[3]
         
         layout.addWidget(scan_group)
         
@@ -385,7 +458,13 @@ class EnhancedDesktopApp(QMainWindow):
         layout.addWidget(progress_group)
         
         layout.addStretch()
-        return panel
+        
+        # Set the panel as the scroll area's widget
+        scroll_area.setWidget(panel)
+        scroll_area.setMinimumWidth(350)  # Minimum width for left panel
+        scroll_area.setMaximumWidth(500)  # Maximum width for left panel
+        
+        return scroll_area
     
     def create_right_panel(self) -> QWidget:
         """Create right results panel"""
@@ -1020,6 +1099,19 @@ class EnhancedDesktopApp(QMainWindow):
         # Save scan options
         settings.setValue("threads", self.threads_spinbox.value())
         settings.setValue("timeout", self.timeout_spinbox.value())
+    
+    def resizeEvent(self, event):
+        """Handle window resize to maintain responsive layout"""
+        super().resizeEvent(event)
+        
+        # Update splitter proportions on resize
+        if hasattr(self, 'centralWidget') and self.centralWidget():
+            splitter = self.centralWidget().findChild(QSplitter)
+            if splitter:
+                window_width = self.width()
+                left_width = min(max(int(window_width * 0.3), 350), 500)
+                right_width = window_width - left_width
+                splitter.setSizes([left_width, right_width])
     
     def closeEvent(self, event):
         """Handle application close"""
