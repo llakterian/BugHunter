@@ -48,7 +48,13 @@ Bug Bounty Hunter Pro Enhanced Edition is a comprehensive security testing suite
 - **Detailed Vulnerability Reports** with evidence
 - **Executive Summaries** with risk assessments
 - **Real-time Progress Tracking**
-- **Comprehensive Logging**
+
+### 📱 Responsive GUI Design
+- **Automatic Screen Detection** - Adapts to any screen size (1366x768 to 3440x1440)
+- **Intelligent Window Sizing** - Uses 85% width, 80% height with smart constraints
+- **Scrollable Panels** - Configuration panel scrolls on small screens
+- **Dynamic Layout** - 30% left panel, 70% right panel with flexible splitter
+- **Window State Persistence** - Remembers size and position across sessions
 
 ### 🖥️ Desktop Integration
 - **Dark Theme Interface** optimized for security professionals
@@ -111,15 +117,24 @@ python3 enhanced_wordlists.py
 ### Launch the Application
 
 ```bash
-# Using the launcher
+# 🚀 Recommended: Use the responsive launcher (auto-setup)
+./launch_responsive.sh
+
+# Or using the enhanced launcher
 python3 launch_enhanced.py
 
-# Or directly
+# Or directly (requires manual dependency setup)
 python3 enhanced_desktop_app.py
 
 # Or from desktop (after installation)
 # Find "Bug Bounty Hunter Pro Enhanced" in applications menu
 ```
+
+#### 📱 Responsive GUI Features
+- **Auto-detects screen resolution** and sizes window optimally
+- **Works perfectly on laptops** (1366x768) and large monitors (3440x1440)
+- **Scrollable configuration panel** for small screens
+- **Persistent window state** - remembers your preferred size and position
 
 ### Basic Workflow
 
