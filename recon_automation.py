@@ -76,13 +76,24 @@ class ReconAutomation:
         alienvault = self.fetch_alienvault_urls(target)
         urlscan = self.fetch_urlscan_urls(target)
         virustotal = self.fetch_virustotal_urls(target, api_key=virustotal_api_key)
-        all_urls = list(set(wayback + alienvault + urlscan + virustotal))
+
+        # Filter out error messages
+        sources = {
+            'wayback': [u for u in wayback if not u.startswith('Error')],
+            'alienvault': [u for u in alienvault if not u.startswith('Error')],
+            'urlscan': [u for u in urlscan if not u.startswith('Error')],
+            'virustotal': [u for u in virustotal if not u.startswith('Error')]
+        }
+
+        all_urls = list(set(sources['wayback'] + sources['alienvault'] + sources['urlscan'] + sources['virustotal']))
+
         return {
-            'wayback_urls': wayback,
-            'alienvault_urls': alienvault,
-            'urlscan_urls': urlscan,
-            'virustotal_urls': virustotal,
-            'all_recon_urls': all_urls,
+            'wayback_urls': sources['wayback'],
+            'alienvault_urls': sources['alienvault'],
+            'urlscan_urls': sources['urlscan'],
+            'virustotal_urls': sources['virustotal'],
+            'all_urls': all_urls,
+            'sources': sources,
             'total_recon_urls': len(all_urls)
         }
 

@@ -12,6 +12,10 @@ class LostFuzzer:
         self.nuclei_cmd = ["nuclei"]
         self.default_templates = ["vulnerabilities", "cves", "misconfiguration", "exposures"]
 
+    def run_scan(self, target, templates=None):
+        """Run Nuclei scan and return structured results."""
+        return self.run_nuclei_dast(target, templates)
+
     def run_nuclei_dast(self, target, templates=None, output_file=None, severity=None):
         """Run Nuclei DAST scan on a single target."""
         cmd = self.nuclei_cmd + ["-u", target]

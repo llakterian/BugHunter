@@ -1,0 +1,166 @@
+{
+  "generated_at": "2025-10-01T20:05:07.857217",
+  "total_programs": 20,
+  "programs": [
+    {
+      "name": "Apple",
+      "url": "https://developer.apple.com/security-bounty/",
+      "platform": "Apple Security Bounty",
+      "max_payout": "$1000000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:27.836931"
+    },
+    {
+      "name": "Coinbase",
+      "url": "https://hackerone.com/coinbase",
+      "platform": "HackerOne",
+      "max_payout": "$50000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:54.661775"
+    },
+    {
+      "name": "Zoom",
+      "url": "https://hackerone.com/zoom",
+      "platform": "HackerOne",
+      "max_payout": "$50000+",
+      "status": "HTTP 403",
+      "last_checked": "2025-10-01T20:05:06.850671"
+    },
+    {
+      "name": "Facebook/Meta",
+      "url": "https://facebook.com/whitehat",
+      "platform": "Meta Bug Bounty",
+      "max_payout": "$40000+",
+      "status": "HTTP 400",
+      "last_checked": "2025-10-01T20:04:30.084308"
+    },
+    {
+      "name": "Dropbox",
+      "url": "https://hackerone.com/dropbox",
+      "platform": "HackerOne",
+      "max_payout": "$32768+",
+      "status": "HTTP 403",
+      "last_checked": "2025-10-01T20:04:50.671803"
+    },
+    {
+      "name": "Google",
+      "url": "https://bughunters.google.com",
+      "platform": "Google VRP",
+      "max_payout": "$31337+",
+      "status": "Possibly Active",
+      "last_checked": "2025-10-01T20:04:21.280544"
+    },
+    {
+      "name": "GitHub",
+      "url": "https://bounty.github.com",
+      "platform": "GitHub Security Bug Bounty",
+      "max_payout": "$30000+",
+      "status": "Inactive",
+      "last_checked": "2025-10-01T20:04:47.599553"
+    },
+    {
+      "name": "PayPal",
+      "url": "https://hackerone.com/paypal",
+      "platform": "HackerOne",
+      "max_payout": "$30000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:52.817446"
+    },
+    {
+      "name": "Shopify",
+      "url": "https://hackerone.com/shopify",
+      "platform": "HackerOne",
+      "max_payout": "$25000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:49.029433"
+    },
+    {
+      "name": "Discord",
+      "url": "https://hackerone.com/discord",
+      "platform": "HackerOne",
+      "max_payout": "$25000+",
+      "status": "HTTP 403",
+      "last_checked": "2025-10-01T20:05:04.218653"
+    },
+    {
+      "name": "Twitter",
+      "url": "https://hackerone.com/twitter",
+      "platform": "HackerOne",
+      "max_payout": "$20160+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:40.844011"
+    },
+    {
+      "name": "Slack",
+      "url": "https://hackerone.com/slack",
+      "platform": "HackerOne",
+      "max_payout": "$17500+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:56.296716"
+    },
+    {
+      "name": "Microsoft",
+      "url": "https://msrc.microsoft.com",
+      "platform": "Microsoft MSRC",
+      "max_payout": "$15000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:23.437930"
+    },
+    {
+      "name": "Tesla",
+      "url": "https://bugcrowd.com/tesla",
+      "platform": "Bugcrowd",
+      "max_payout": "$15000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:33.804139"
+    },
+    {
+      "name": "Netflix",
+      "url": "https://hackerone.com/netflix",
+      "platform": "HackerOne",
+      "max_payout": "$15000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:35.921976"
+    },
+    {
+      "name": "TikTok",
+      "url": "https://hackerone.com/tiktok",
+      "platform": "HackerOne",
+      "max_payout": "$15000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:05:02.445551"
+    },
+    {
+      "name": "Uber",
+      "url": "https://hackerone.com/uber",
+      "platform": "HackerOne",
+      "max_payout": "$10000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:37.459246"
+    },
+    {
+      "name": "Spotify",
+      "url": "https://hackerone.com/spotify",
+      "platform": "HackerOne",
+      "max_payout": "$10000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:58.553332"
+    },
+    {
+      "name": "Airbnb",
+      "url": "https://hackerone.com/airbnb",
+      "platform": "HackerOne",
+      "max_payout": "$5000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:04:38.892667"
+    },
+    {
+      "name": "Reddit",
+      "url": "https://hackerone.com/reddit",
+      "platform": "HackerOne",
+      "max_payout": "$5000+",
+      "status": "Active",
+      "last_checked": "2025-10-01T20:05:00.700611"
+    }
+  ]
+}

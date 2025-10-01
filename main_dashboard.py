@@ -322,11 +322,31 @@ class MainDashboard(QWidget):
                 row = i // 2
                 col = i % 2
                 layout.addWidget(checkbox, row, col)
-                
+
+            # Add numeric inputs after checkboxes
+            threads_layout = QHBoxLayout()
+            threads_label = QLabel("Threads:")
+            self.threads_input = QSpinBox()
+            self.threads_input.setRange(1, 50)
+            self.threads_input.setValue(10)
+            threads_layout.addWidget(threads_label)
+            threads_layout.addWidget(self.threads_input)
+
+            timeout_layout = QHBoxLayout()
+            timeout_label = QLabel("Timeout:")
+            self.timeout_input = QSpinBox()
+            self.timeout_input.setRange(1, 300)
+            self.timeout_input.setValue(30)
+            timeout_layout.addWidget(timeout_label)
+            timeout_layout.addWidget(self.timeout_input)
+
+            layout.addLayout(threads_layout, len(scan_options)//2 + 1, 0)
+            layout.addLayout(timeout_layout, len(scan_options)//2 + 1, 1)
+
         else:  # Full layout for larger screens
             layout = QVBoxLayout(group)
             layout.setSpacing(4)
-            
+
             scan_options = [
                 ("Directory Fuzzing", "directory_scan_cb", True),
                 ("Subdomain Enumeration", "subdomain_scan_cb", False),
@@ -334,13 +354,32 @@ class MainDashboard(QWidget):
                 ("Admin Panel Discovery", "admin_panel_cb", True),
                 ("Bypass Redirects", "bypass_redirects_cb", True)
             ]
-            
+
             for label, attr, default in scan_options:
                 checkbox = QCheckBox(label)
                 checkbox.setChecked(default)
                 setattr(self, attr, checkbox)
                 layout.addWidget(checkbox)
-        
+
+            # Add numeric inputs
+            threads_layout = QHBoxLayout()
+            threads_label = QLabel("Threads:")
+            self.threads_input = QSpinBox()
+            self.threads_input.setRange(1, 50)
+            self.threads_input.setValue(10)
+            threads_layout.addWidget(threads_label)
+            threads_layout.addWidget(self.threads_input)
+            layout.addLayout(threads_layout)
+
+            timeout_layout = QHBoxLayout()
+            timeout_label = QLabel("Timeout (sec):")
+            self.timeout_input = QSpinBox()
+            self.timeout_input.setRange(1, 300)
+            self.timeout_input.setValue(30)
+            timeout_layout.addWidget(timeout_label)
+            timeout_layout.addWidget(self.timeout_input)
+            layout.addLayout(timeout_layout)
+
         return group
     
     def create_zap_group(self):
@@ -401,6 +440,10 @@ class MainDashboard(QWidget):
         self.generate_report_btn = QPushButton("Generate Report")
         self.generate_report_btn.clicked.connect(self.generate_report)
         layout.addWidget(self.generate_report_btn)
+
+        self.open_reports_btn = QPushButton("Open Reports Directory")
+        self.open_reports_btn.clicked.connect(self.open_reports_directory)
+        layout.addWidget(self.open_reports_btn)
         
         return group
     
@@ -748,7 +791,7 @@ class MainDashboard(QWidget):
             
             # Start scanning
             self.add_log(f"🎯 Starting ADVANCED bug hunt on {target_url}")
-            self.add_log("🚀 Features: Auto-validation, Auto-exploitation, Login testing", "info")
+            self.add_log("🚀 Features: Directory Fuzzing, Admin Discovery, Parameter Testing, Nuclei Scanning", "info")
             success = self.scanner_engine.start_scan(scan_config)
             
             if not success:
@@ -887,18 +930,123 @@ class MainDashboard(QWidget):
         for selector in self.wordlist_selectors.values():
             selector.load_wordlists()
     
-    def generate_report(self):
+    def generate_report(self, auto=False):
         """Generate a comprehensive report"""
-        filename, _ = QFileDialog.getSaveFileName(
-            self, "Save Report", "bug_bounty_report.html", 
-            "HTML Files (*.html);;PDF Files (*.pdf);;All Files (*)"
-        )
-        
-        if filename:
-            self.add_log(f"Generating report: {filename}")
-            # TODO: Implement report generation
-            self.add_log("Report generated successfully", "success")
-    
+
+        if not auto:
+            filename, _ = QFileDialog.getSaveFileName(
+                self, "Save Report", "bug_bounty_report.html",
+                "HTML Files (*.html);;JSON Files (*.json);;All Files (*)"
+            )
+
+            if not filename:
+                return
+        else:
+            # Auto-generate with timestamp
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"bug_bounty_report_{timestamp}.html"
+
+        self.add_log(f"Generating report: {filename}")
+
+        # Collect scan data
+        scan_data = self._collect_scan_data()
+
+        # Generate report
+        try:
+            if filename.endswith('.html'):
+                filepath = self.report_generator.generate_html_report(scan_data, os.path.basename(filename))
+            elif filename.endswith('.json'):
+                filepath = self.report_generator.generate_json_report(scan_data, os.path.basename(filename))
+            else:
+                filepath = self.report_generator.generate_html_report(scan_data, os.path.basename(filename))
+
+            self.add_log(f"Report generated successfully: {filepath}", "success")
+
+            # If auto-generated, show in browser or notify
+            if auto:
+                import webbrowser
+                webbrowser.open(f"file://{os.path.abspath(filepath)}")
+                self.add_log("Report opened in default browser", "info")
+
+        except Exception as e:
+            self.add_log(f"Error generating report: {e}", "error")
+
+    def _collect_scan_data(self):
+        """Collect all scan data for report generation"""
+        scan_data = {
+            'vulnerabilities': [],
+            'results': [],
+            'scan_config': {},
+            'target_url': self.target_url_input.text(),
+            'scan_timestamp': None
+        }
+
+        # Collect vulnerabilities from table
+        row_count = self.vulns_table.rowCount()
+        for row in range(row_count):
+            vuln = {
+                'severity': self.vulns_table.item(row, 0).text() if self.vulns_table.item(row, 0) else '',
+                'type': self.vulns_table.item(row, 1).text() if self.vulns_table.item(row, 1) else '',
+                'url': self.vulns_table.item(row, 2).text() if self.vulns_table.item(row, 2) else '',
+                'description': self.vulns_table.item(row, 3).text() if self.vulns_table.item(row, 3) else '',
+                'impact': self.vulns_table.item(row, 4).text() if self.vulns_table.item(row, 4) else ''
+            }
+            scan_data['vulnerabilities'].append(vuln)
+
+        # Collect results from other tabs (simplified - collect from logs or specific widgets)
+        # For now, collect from results tabs
+        results_tabs = ['Directory Results', 'Subdomain Results', 'Admin Panel Results', 'JWT Results']
+        for tab_name in results_tabs:
+            for i in range(self.tabs.count()):
+                if self.tabs.tabText(i) == tab_name:
+                    tab_widget = self.tabs.widget(i)
+                    # Assuming each tab has a text area or list
+                    if hasattr(tab_widget, 'toPlainText'):
+                        content = tab_widget.toPlainText()
+                        if content.strip():
+                            scan_data['results'].append({
+                                'type': tab_name,
+                                'content': content
+                            })
+                    break
+
+        # Collect scan configuration
+        scan_data['scan_config'] = {
+            'target_url': self.target_url_input.text(),
+            'threads': self.threads_input.value(),
+            'timeout': self.timeout_input.value(),
+            'directory_scan': self.directory_scan_cb.isChecked(),
+            'subdomain_scan': self.subdomain_scan_cb.isChecked(),
+            'jwt_analysis': self.jwt_analysis_cb.isChecked(),
+            'admin_panel': self.admin_panel_cb.isChecked(),
+            'bypass_redirects': self.bypass_redirects_cb.isChecked(),
+            'wordlist': getattr(self, 'wordlist_path', 'default')
+        }
+
+        # Add timestamp
+        from datetime import datetime
+        scan_data['scan_timestamp'] = datetime.now().isoformat()
+
+        return scan_data
+
+    def open_reports_directory(self):
+        """Open the reports directory in file explorer"""
+        import os
+        import subprocess
+        reports_dir = self.config_manager.get_output_config().get('reports_dir', 'reports')
+        if os.path.exists(reports_dir):
+            try:
+                if os.name == 'nt':  # Windows
+                    os.startfile(reports_dir)
+                elif os.name == 'posix':  # macOS/Linux
+                    subprocess.run(['xdg-open', reports_dir])
+                self.add_log(f"Opened reports directory: {reports_dir}", "info")
+            except Exception as e:
+                self.add_log(f"Could not open reports directory: {e}", "error")
+        else:
+            self.add_log(f"Reports directory does not exist: {reports_dir}", "warning")
+
     def on_wordlist_changed(self, category, file_path):
         """Handle wordlist selection changes"""
         self.add_log(f"Wordlist updated for {category}: {Path(file_path).name}", "info")

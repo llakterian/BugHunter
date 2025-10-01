@@ -32,11 +32,14 @@ class ScannerEngine(QObject):
         # Load configuration
         self.scanning_config = config_manager.get_scanning_config()
         self.wordlists_config = config_manager.get_wordlists_config()
-        
+
         # Setup session
         self.session.headers.update({
             'User-Agent': self.scanning_config.get('user_agent', 'BugBountyHunterPro/1.0')
         })
+
+        # Rate limiting
+        self.rate_limit = self.scanning_config.get('rate_limit', 0.1)  # seconds between requests
         
         # Load wordlists
         self.load_wordlists()
@@ -44,8 +47,15 @@ class ScannerEngine(QObject):
         # Store custom wordlist paths
         self.custom_wordlists = {}
 
+        # Vulnerability counter
+        self.vulnerability_count = 0
+
         # Store discovered parameters for vulnerability testing
         self.discovered_parameters = []
+
+        # Track vulnerabilities found
+        self.vulnerabilities_found = 0
+        self.found_vulnerabilities = []
 
         # Initialize advanced components
         self.vulnerability_validator = VulnerabilityValidator(config_manager)
@@ -72,7 +82,15 @@ class ScannerEngine(QObject):
         self.exploitation_engine.exploitation_complete.connect(self._on_exploitation_complete)
         self.exploitation_engine.shell_obtained.connect(self._on_shell_obtained)
         self.exploitation_engine.data_extracted.connect(self._on_data_extracted)
-    
+
+        # Connect vulnerability found signal to counter
+        self.vulnerability_found.connect(self._on_vulnerability_found)
+
+    def _on_vulnerability_found(self, severity, vuln_type, url, description, impact):
+        """Handle vulnerability found signal by incrementing counter"""
+        self.vulnerability_count += 1
+        self.log_message.emit(f"🔴 Vulnerability #{self.vulnerability_count}: {vuln_type} at {url}", "error")
+
     def load_wordlists(self):
         """Load wordlists for fuzzing"""
         self.wordlists = {
@@ -226,34 +244,81 @@ class ScannerEngine(QObject):
                 self.log_message.emit("⚡ PHASE 6: Advanced Vulnerability Testing", "info")
                 self._advanced_vulnerability_testing(target_url)
                 vulnerabilities_found += self._get_phase_vulns()
-            
-            # PHASE 7: Technology Stack Analysis
+
+            # PHASE 7: Nuclei Vulnerability Scanning
+            if self.is_scanning and self.nuclei_shodan:
+                self.log_message.emit("🔬 PHASE 7: Nuclei Vulnerability Scanning", "info")
+                nuclei_vulns = self._run_nuclei_scan(target_url)
+                vulnerabilities_found += nuclei_vulns
+
+            # PHASE 8: Technology Stack Analysis
             if self.is_scanning:
-                self.log_message.emit("🔬 PHASE 7: Technology Stack & Version Analysis", "info")
+                self.log_message.emit("🔬 PHASE 8: Technology Stack & Version Analysis", "info")
                 self._technology_stack_analysis(target_url)
                 vulnerabilities_found += self._get_phase_vulns()
-            
-            # PHASE 8: Security Headers & Configuration Analysis
+
+            # PHASE 9: Security Headers & Configuration Analysis
             if self.is_scanning:
-                self.log_message.emit("🛡️ PHASE 8: Security Configuration Analysis", "info")
+                self.log_message.emit("🛡️ PHASE 9: Security Configuration Analysis", "info")
                 self._security_configuration_analysis(target_url)
                 vulnerabilities_found += self._get_phase_vulns()
-            
+
             scan_duration = time.time() - scan_start_time
-            self.progress_updated.emit(100, "Scan completed")
-            
-            # Generate comprehensive scan summary
-            self._generate_scan_summary(target_url, scan_duration, vulnerabilities_found, total_operations)
-            
-        except KeyboardInterrupt:
-            self.log_message.emit("🛑 Scan interrupted by user", "warning")
+
         except Exception as e:
-            self.log_message.emit(f"💥 Critical scan error: {str(e)}", "error")
-            self._handle_critical_error(e)
-        finally:
-            self._cleanup_scan_resources()
-            self.is_scanning = False
-            self.scan_completed.emit()
+            self.log_message.emit(f"❌ Scan failed: {str(e)}", "error")
+            import traceback
+            self.log_message.emit(f"Traceback: {traceback.format_exc()}", "error")
+
+    def _run_nuclei_scan(self, target_url):
+        """Run Nuclei vulnerability scanning and report findings"""
+        vuln_count = 0
+
+        try:
+            # Run Nuclei scan with JSON output for better parsing
+            nuclei_output = self.nuclei_shodan.run_nuclei_scan(target_url, templates=None, silent_info=True)
+
+            for line in nuclei_output:
+                if line.strip():
+                    try:
+                        # Try to parse as JSON (Nuclei can output JSON)
+                        vuln_data = json.loads(line)
+                        severity = vuln_data.get('info', {}).get('severity', 'info').title()
+                        vuln_type = vuln_data.get('info', {}).get('name', 'Unknown Vulnerability')
+                        url = vuln_data.get('matched-at', target_url)
+                        description = vuln_data.get('info', {}).get('description', 'Nuclei detected vulnerability')
+                        impact = vuln_data.get('info', {}).get('impact', 'See description')
+
+                        # Map severity levels
+                        severity_map = {
+                            'Info': 'Low',
+                            'Low': 'Low',
+                            'Medium': 'Medium',
+                            'High': 'High',
+                            'Critical': 'Critical'
+                        }
+
+                        mapped_severity = severity_map.get(severity, 'Medium')
+
+                        self.vulnerability_found.emit(
+                            mapped_severity, f"Nuclei: {vuln_type}", url, description, impact
+                        )
+                        vuln_count += 1
+
+                    except json.JSONDecodeError:
+                        # If not JSON, check if it's a vulnerability finding
+                        if any(keyword in line.lower() for keyword in ['vulnerable', 'exposed', 'weak', 'insecure']):
+                            self.vulnerability_found.emit(
+                                "Medium", "Nuclei Finding", target_url, line, "Nuclei detected potential security issue"
+                            )
+                            vuln_count += 1
+
+            self.log_message.emit(f"🔬 Nuclei scan completed: {vuln_count} vulnerabilities found", "success")
+
+        except Exception as e:
+            self.log_message.emit(f"⚠️ Nuclei scan failed: {str(e)}", "warning")
+
+        return vuln_count
     
     def _validate_and_normalize_url(self, target_url):
         """Advanced URL validation and normalization"""
@@ -1219,26 +1284,57 @@ class ScannerEngine(QObject):
             return f"📄 HTTP {status}"
     
     def _advanced_directory_analysis(self, result):
-        """Advanced analysis of discovered directories"""
+        """Advanced analysis of discovered directories for actual vulnerabilities"""
         url = result['url'].lower()
         status = result['status']
-        
+        content = ""
+
+        # Get response content for analysis
+        try:
+            response = self.session.get(result['url'], timeout=10)
+            content = response.text.lower()
+        except:
+            pass
+
+        # Check for actual vulnerabilities, not just exposed paths
         if status == 200:
-            high_risk_indicators = [
-                'admin', 'administrator', 'login', 'dashboard', 'panel',
-                'config', 'configuration', 'backup', 'database', 'db',
-                'phpinfo', 'info.php', 'test.php', 'debug'
-            ]
-            
-            for indicator in high_risk_indicators:
-                if indicator in url:
-                    severity = "High" if indicator in ['admin', 'config', 'database'] else "Medium"
-                    self.vulnerability_found.emit(
-                        severity, f"Exposed {indicator.title()} Interface", result['url'],
-                        f"Sensitive {indicator} interface is publicly accessible",
-                        f"Unauthorized access to {indicator} functionality"
-                    )
-                    break
+            # Check for information disclosure
+            if any(indicator in url for indicator in ['.env', '.git', '.svn', 'backup', '.bak']):
+                self.vulnerability_found.emit(
+                    "High", "Information Disclosure", result['url'],
+                    "Sensitive configuration or backup files are publicly accessible",
+                    "Potential exposure of credentials, API keys, or sensitive configuration data"
+                )
+            # Check for exposed debug/test endpoints
+            elif any(indicator in url for indicator in ['phpinfo', 'debug', 'test.php', 'info.php']):
+                self.vulnerability_found.emit(
+                    "Medium", "Debug Information Exposure", result['url'],
+                    "Debug or test endpoints are accessible in production",
+                    "Information disclosure that may aid attackers"
+                )
+            # Check for misconfigurations (like directory listing)
+            elif 'index of' in content or 'parent directory' in content:
+                self.vulnerability_found.emit(
+                    "Medium", "Directory Listing Enabled", result['url'],
+                    "Directory listing is enabled, exposing file structure",
+                    "Attackers can enumerate files and directories"
+                )
+            # Check for exposed version control
+            elif '.git' in url or '.svn' in url:
+                self.vulnerability_found.emit(
+                    "High", "Version Control Exposure", result['url'],
+                    "Version control system files are publicly accessible",
+                    "Source code and sensitive files may be exposed"
+                )
+
+        # Check for misconfigured redirects or error pages
+        elif status in [500, 501, 502, 503]:
+            if 'stack trace' in content or 'error' in content.lower():
+                self.vulnerability_found.emit(
+                    "Low", "Verbose Error Messages", result['url'],
+                    "Server is leaking detailed error information",
+                    "May reveal technology stack and potential attack vectors"
+                )
     
     def _advanced_admin_discovery(self, target_url, current_step, total_steps):
         """Advanced admin panel and sensitive endpoint discovery"""
@@ -1283,24 +1379,45 @@ class ScannerEngine(QObject):
         return current_step
     
     def _test_admin_endpoint(self, base_url, admin_path):
-        """Test individual admin endpoint"""
+        """Test individual admin endpoint with content validation"""
         url = f"{base_url}/{admin_path}"
-        
+
         try:
             response = self.session.get(url, timeout=15, allow_redirects=True)
-            
+            time.sleep(self.rate_limit)  # Rate limiting
+
             if response.status_code in [200, 401, 403]:
-                auth_required = "Yes" if response.status_code in [401, 403] else "No"
-                
-                return {
-                    'url': url,
-                    'path': admin_path,
-                    'status': response.status_code,
-                    'auth_required': auth_required,
-                    'content': response.text[:1000],  # First 1000 chars for analysis
-                    'headers': dict(response.headers)
-                }
-            
+                content_lower = response.text.lower()
+                title = self._extract_title(response.text)
+
+                # Check for admin-related indicators
+                admin_indicators = [
+                    'login', 'admin', 'dashboard', 'panel', 'control', 'manage',
+                    'administrator', 'signin', 'log in', 'authenticate'
+                ]
+
+                is_admin_page = any(indicator in content_lower for indicator in admin_indicators) or \
+                               any(indicator in title.lower() for indicator in admin_indicators)
+
+                # Avoid false positives on generic error pages
+                if not is_admin_page and response.status_code == 200:
+                    # Check if it's a custom admin page or has forms
+                    if '<form' in response.text or 'password' in content_lower:
+                        is_admin_page = True
+
+                if is_admin_page:
+                    auth_required = "Yes" if response.status_code in [401, 403] else "No"
+
+                    return {
+                        'url': url,
+                        'path': admin_path,
+                        'status': response.status_code,
+                        'auth_required': auth_required,
+                        'title': title,
+                        'content': response.text[:1000],  # First 1000 chars for analysis
+                        'headers': dict(response.headers)
+                    }
+
             return None
             
         except Exception:
@@ -1309,16 +1426,33 @@ class ScannerEngine(QObject):
     def _analyze_admin_security(self, result):
         """Analyze admin panel security"""
         if result['status'] == 200:
-            # Admin panel accessible without authentication
-            self.vulnerability_found.emit(
-                "Critical", "Unprotected Admin Panel", result['url'],
-                "Admin panel is accessible without authentication",
-                "Complete system compromise possible through admin access"
-            )
+            # Check if it's actually protected (has login form)
+            content = result.get('content', '').lower()
+            if self._has_login_form(content):
+                # It's a login page, not unprotected
+                pass  # Don't count as vulnerability
+            else:
+                # Admin panel accessible without authentication
+                self.vulnerability_found.emit(
+                    "Critical", "Unprotected Admin Panel", result['url'],
+                    "Admin panel is accessible without authentication",
+                    "Complete system compromise possible through admin access"
+                )
         elif result['status'] == 401:
             # Basic auth - test for weak credentials
             self._test_weak_admin_credentials(result['url'])
-    
+
+    def _has_login_form(self, content):
+        """Check if content contains login form indicators"""
+        login_indicators = [
+            'login', 'signin', 'sign-in', 'log-in', 'username', 'password',
+            'email', 'user', 'auth', 'authenticate', 'form', 'input type="password"',
+            'type="text"', 'name="user"', 'name="pass"', 'name="email"'
+        ]
+        # Check for multiple indicators to avoid false positives
+        indicators_found = sum(1 for indicator in login_indicators if indicator in content)
+        return indicators_found >= 3  # Require at least 3 indicators
+
     def _test_weak_admin_credentials(self, admin_url):
         """Test for weak admin credentials"""
         weak_creds = [
@@ -1389,31 +1523,47 @@ class ScannerEngine(QObject):
         return current_step
     
     def _test_parameter_advanced(self, base_url, param):
-        """Advanced parameter testing"""
-        test_methods = [
-            ('GET', f"{base_url}?{param}=test"),
-            ('POST', base_url, {param: 'test'})
-        ]
-        
-        for method, url, *data in test_methods:
+        """Advanced parameter testing with validation"""
+        test_values = ['test', 'uniquevalue123']
+
+        for method in ['GET', 'POST']:
             try:
-                if method == 'GET':
-                    response = self.session.get(url, timeout=10)
-                else:
-                    response = self.session.post(url, data=data[0] if data else {}, timeout=10)
-                
-                # Check for parameter reflection or behavior change
-                if 'test' in response.text or response.status_code not in [404, 405]:
-                    return {
-                        'url': url,
-                        'parameter': param,
-                        'method': method,
-                        'status': response.status_code,
-                        'reflected': 'test' in response.text
-                    }
+                responses = []
+                for value in test_values:
+                    if method == 'GET':
+                        url = f"{base_url}?{param}={value}"
+                        response = self.session.get(url, timeout=10)
+                    else:
+                        response = self.session.post(base_url, data={param: value}, timeout=10)
+                        url = base_url
+
+                    responses.append((response, value))
+                    time.sleep(self.rate_limit)  # Rate limiting
+
+                # Check if responses differ, indicating parameter is active
+                if len(responses) == 2:
+                    resp1, val1 = responses[0]
+                    resp2, val2 = responses[1]
+
+                    # If status codes differ or content differs significantly
+                    if (resp1.status_code != resp2.status_code or
+                        abs(len(resp1.text) - len(resp2.text)) > 100 or
+                        val1 in resp1.text and val2 not in resp2.text or
+                        resp1.status_code not in [404, 405, 500]):  # Avoid error pages
+
+                        # Additional check: ensure it's not just reflecting in error
+                        if 'error' not in resp1.text.lower() or param in resp1.text:
+                            return {
+                                'url': url,
+                                'parameter': param,
+                                'method': method,
+                                'status': resp1.status_code,
+                                'reflected': val1 in resp1.text,
+                                'behavior_change': resp1.status_code != resp2.status_code
+                            }
             except:
                 continue
-        
+
         return None
     
     def _test_parameter_vulnerabilities(self, base_url, param):
@@ -2035,6 +2185,20 @@ class ScannerEngine(QObject):
             f"Sensitive data successfully extracted via {vuln_type}",
             f"Data breach confirmed: {len(extracted_data.get('extracted_data', []))} sensitive items extracted"
         )
+
+    def _on_vulnerability_found(self, severity, vuln_type, url, description, impact):
+        """Handle found vulnerability"""
+        vuln = {
+            'severity': severity,
+            'type': vuln_type,
+            'url': url,
+            'description': description,
+            'impact': impact
+        }
+        self.found_vulnerabilities.append(vuln)
+        self.vulnerabilities_found += 1
+
+
     
     def _generate_exploitation_proof(self, exploitation_result):
         """Generate detailed exploitation proof"""
@@ -2170,7 +2334,7 @@ class ScannerEngine(QObject):
         self.scan_start_time = time.time()
         
         self.log_message.emit("🚀 ADVANCED BUG BOUNTY SCANNER INITIALIZED", "success")
-        self.log_message.emit("🎯 Features: Auto-validation, Auto-exploitation, Login testing, Data extraction", "info")
+        self.log_message.emit("🎯 Features: Directory Fuzzing, Admin Discovery, Parameter Testing, Nuclei Scanning, JWT Analysis", "info")
         self.log_message.emit("⚡ Ready for professional bug bounty hunting!", "success")
 
     def _test_sql_injection_enhanced(self, target_url):

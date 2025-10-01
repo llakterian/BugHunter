@@ -15,14 +15,18 @@ import logging
 class NucleiShodanIntegration:
     def run_nuclei_scan(self, target, templates=None, batch_size=50, concurrency=50, silent_info=True):
         """Run Nuclei scan against target using specified templates."""
-        cmd = ["nuclei", "-u", target, "-bs", str(batch_size), "-c", str(concurrency)]
+        # Use local nuclei binary
+        nuclei_path = os.path.join(os.path.dirname(__file__), "nuclei")
+        cmd = [nuclei_path, "-u", target, "-json", "-bs", str(batch_size), "-c", str(concurrency)]
         if templates:
             cmd += ["-t", templates]
         if silent_info:
             cmd += ["-es", "info"]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             return result.stdout.splitlines()
+        except subprocess.TimeoutExpired:
+            return ["Error: Nuclei scan timed out"]
         except Exception as e:
             return [f"Error running Nuclei: {e}"]
 
@@ -59,28 +63,43 @@ class NucleiShodanIntegration:
                 domains.extend(hostnames)
         return list(set(domains))  # Remove duplicates
 
-    def mass_cve_scan(self, targets: List[str], shodan_api_key: str, cve_queries: List[str], max_workers: int = 10) -> Dict[str, Any]:
+    def mass_cve_scan(self, shodan_api_key: str, cve_query: str, cve_templates: str = "grafana") -> Dict[str, Any]:
         """
-        Perform mass CVE scanning across multiple targets using Shodan and Nuclei
-        33X enhanced: Parallel processing, comprehensive reporting, vulnerability correlation
+        Perform mass CVE scanning using Shodan and Nuclei
         """
-        logging.info(f"Starting mass CVE scan on {len(targets)} targets with {len(cve_queries)} queries")
+        logging.info(f"Starting mass CVE scan with query: {cve_query}")
+
+        # Run Shodan query
+        shodan_results = self.run_shodan_query(shodan_api_key, cve_query)
+        if "error" in shodan_results:
+            return {"error": f"Shodan query failed: {shodan_results['error']}"}
+
+        ips = self.extract_ips_from_shodan(shodan_results)
+        domains = self.extract_domains_from_shodan(shodan_results)
 
         results = {
-            "scan_start": time.time(),
-            "targets_scanned": len(targets),
-            "cve_queries": len(cve_queries),
-            "vulnerabilities_found": [],
-            "shodan_results": {},
-            "nuclei_results": {},
-            "correlations": [],
-            "stats": {
-                "high_severity": 0,
-                "medium_severity": 0,
-                "low_severity": 0,
-                "info": 0
-            }
+            "total_ips": len(ips),
+            "total_domains": len(domains),
+            "ips": ips,
+            "domains": domains,
+            "nuclei_findings": [],
+            "ip_file": f"temp/{cve_query.replace(' ', '_')}_ips.txt",
+            "domain_file": f"temp/{cve_query.replace(' ', '_')}_domains.txt"
         }
+
+        # Save IPs and domains
+        os.makedirs("temp", exist_ok=True)
+        with open(results["ip_file"], "w") as f:
+            f.write("\n".join(ips))
+        with open(results["domain_file"], "w") as f:
+            f.write("\n".join(domains))
+
+        # Run Nuclei on found IPs (sample first 10 for demo)
+        for ip in ips[:10]:
+            nuclei_results = self.run_nuclei_scan(ip, cve_templates)
+            results["nuclei_findings"].extend(nuclei_results)
+
+        return results
 
         # Parallel Shodan queries
         def shodan_worker(query):

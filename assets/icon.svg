@@ -1,56 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background circle -->
-  <circle cx="128" cy="128" r="120" fill="#2c3e50"/>
-  
-  <!-- Shield outline -->
-  <path d="M128 20 L200 50 L200 120 C200 180 170 210 128 230 C86 210 56 180 56 120 L56 50 Z" 
-        fill="#3498db" stroke="#2980b9" stroke-width="4"/>
-  
-  <!-- Shield inner detail -->
-  <path d="M128 40 L180 60 L180 110 C180 150 160 170 128 185 C96 170 76 150 76 110 L76 60 Z" 
-        fill="#ecf0f1" opacity="0.3"/>
-  
-  <!-- Bug icon (stylized) -->
-  <g transform="translate(128,128)">
-    <!-- Bug body -->
-    <ellipse cx="0" cy="10" rx="15" ry="25" fill="#e74c3c"/>
-    
-    <!-- Bug head -->
-    <circle cx="0" cy="-15" r="8" fill="#e74c3c"/>
-    
-    <!-- Eyes -->
-    <circle cx="-3" cy="-17" r="2" fill="#2c3e50"/>
-    <circle cx="3" cy="-17" r="2" fill="#2c3e50"/>
-    
-    <!-- Legs -->
-    <line x1="-12" y1="5" x2="-20" y2="15" stroke="#2c3e50" stroke-width="2"/>
-    <line x1="-8" y1="15" x2="-16" y2="25" stroke="#2c3e50" stroke-width="2"/>
-    <line x1="-4" y1="25" x2="-12" y2="35" stroke="#2c3e50" stroke-width="2"/>
-    
-    <line x1="12" y1="5" x2="20" y2="15" stroke="#2c3e50" stroke-width="2"/>
-    <line x1="8" y1="15" x2="16" y2="25" stroke="#2c3e50" stroke-width="2"/>
-    <line x1="4" y1="25" x2="12" y2="35" stroke="#2c3e50" stroke-width="2"/>
-    
-    <!-- Antennae -->
-    <line x1="-5" y1="-20" x2="-10" y2="-30" stroke="#2c3e50" stroke-width="2"/>
-    <line x1="5" y1="-20" x2="10" y2="-30" stroke="#2c3e50" stroke-width="2"/>
-    
-    <!-- Wings -->
-    <path d="M-18 0 Q-25 -10 -15 -15 Q-5 -10 -8 0 Z" fill="#bdc3c7" opacity="0.7"/>
-    <path d="M18 0 Q25 -10 15 -15 Q5 -10 8 0 Z" fill="#bdc3c7" opacity="0.7"/>
-  </g>
-  
-  <!-- Search/magnifying glass icon -->
-  <g transform="translate(70,70)">
-    <circle cx="0" cy="0" r="20" fill="none" stroke="#f39c12" stroke-width="3"/>
-    <line x1="15" y1="15" x2="25" y2="25" stroke="#f39c12" stroke-width="3"/>
-  </g>
-  
-  <!-- Lock icon for security -->
-  <g transform="translate(160,160)">
-    <rect x="-8" y="-5" width="16" height="12" rx="2" fill="#27ae60"/>
-    <path d="M-6 -8 C-6 -12 -3 -15 0 -15 C3 -15 6 -12 6 -8" fill="#27ae60"/>
-    <circle cx="0" cy="-2" r="1.5" fill="#2c3e50"/>
-  </g>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" fill="#2c3e50"/>
+  <circle cx="32" cy="32" r="20" fill="#3498db"/>
+  <text x="32" y="38" text-anchor="middle" fill="white" font-family="Arial" font-size="16" font-weight="bold">BB</text>
 </svg>
