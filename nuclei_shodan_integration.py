@@ -46,6 +46,10 @@ class NucleiShodanIntegration:
                 ips.append(match.get("ip_str", ""))
         return list(set(ips))  # Remove duplicates
 
+    def run_integrated_scan(self, target):
+        """Run integrated Nuclei scan against target."""
+        return self.run_nuclei_scan(target)
+
     def extract_domains_from_shodan(self, shodan_results):
         """Extract domains from Shodan search results."""
         domains = []

@@ -43,7 +43,10 @@ class ScannerEngine(QObject):
         
         # Store custom wordlist paths
         self.custom_wordlists = {}
-        
+
+        # Store discovered parameters for vulnerability testing
+        self.discovered_parameters = []
+
         # Initialize advanced components
         self.vulnerability_validator = VulnerabilityValidator(config_manager)
         self.exploitation_engine = ExploitationEngine(config_manager)
@@ -160,7 +163,10 @@ class ScannerEngine(QObject):
         """Run the ultra-robust comprehensive scan"""
         scan_start_time = time.time()
         vulnerabilities_found = 0
-        
+
+        # Reset discovered parameters for new scan
+        self.discovered_parameters = []
+
         try:
             target_url = self.scan_config['target_url']
             self.log_message.emit(f"🎯 INITIATING ADVANCED BUG BOUNTY SCAN: {target_url}", "info")
@@ -1355,16 +1361,20 @@ class ScannerEngine(QObject):
                 result = self._test_parameter_advanced(base_url, param)
                 if result:
                     found_params += 1
-                    
+
+                    # Store discovered parameter for later vulnerability testing
+                    if param not in self.discovered_parameters:
+                        self.discovered_parameters.append(param)
+
                     self.result_found.emit(
                         "🔍 Parameter", result['url'],
                         f"Method: {result['method']} | Status: {result['status']}",
                         f"Parameter '{param}' appears active"
                     )
-                    
+
                     # Test for vulnerabilities
                     self._test_parameter_vulnerabilities(base_url, param)
-                    
+
                     self.log_message.emit(f"🎯 Active parameter: {param}", "success")
             
             except Exception:
@@ -2186,11 +2196,8 @@ class ScannerEngine(QObject):
             "' AND updatexml(1,concat(0x7e,(select database())),1)--"
         ]
 
-        # Find actual input fields by crawling the site first
-        input_fields = self._discover_input_fields(target_url)
-        if not input_fields:
-            # Fallback to common parameters
-            input_fields = ['id', 'user', 'search', 'q', 'name', 'page', 'cat', 'category', 'product', 'item']
+        # Use discovered parameters from phase 4, or fallback
+        input_fields = self.discovered_parameters if self.discovered_parameters else ['id', 'user', 'search', 'q', 'name', 'page', 'cat', 'category', 'product', 'item']
 
         self.log_message.emit(f"🔍 Testing {len(input_fields)} parameters for SQL injection", "info")
 
@@ -2295,10 +2302,8 @@ class ScannerEngine(QObject):
             "';alert('XSS');//"
         ]
 
-        # Find actual input fields
-        input_fields = self._discover_input_fields(target_url)
-        if not input_fields:
-            input_fields = ['search', 'q', 'name', 'comment', 'message', 'query', 'input', 'text']
+        # Use discovered parameters from phase 4, or fallback
+        input_fields = self.discovered_parameters if self.discovered_parameters else ['search', 'q', 'name', 'comment', 'message', 'query', 'input', 'text']
 
         self.log_message.emit(f"🔍 Testing {len(input_fields)} parameters for XSS", "info")
 
@@ -2371,9 +2376,7 @@ class ScannerEngine(QObject):
             '; uname -a', '| uname -a', '&& uname -a'
         ]
 
-        input_fields = self._discover_input_fields(target_url)
-        if not input_fields:
-            input_fields = ['cmd', 'command', 'exec', 'system', 'file', 'path', 'run']
+        input_fields = self.discovered_parameters if self.discovered_parameters else ['cmd', 'command', 'exec', 'system', 'file', 'path', 'run']
 
         for param in input_fields:
             for payload in cmd_payloads:
@@ -2499,8 +2502,12 @@ class ScannerEngine(QObject):
         """Test for known vulnerabilities on popular test sites"""
         from urllib.parse import urlparse
 
-        domain = urlparse(target_url).netloc.lower()
-        self.log_message.emit(f"🔍 Testing known vulnerabilities for domain: {domain}", "info")
+        try:
+            domain = urlparse(target_url).netloc.lower()
+            self.log_message.emit(f"🔍 Testing known vulnerabilities for domain: {domain}", "info")
+        except Exception as e:
+            self.log_message.emit(f"⚠️ Failed to parse domain: {str(e)}", "warning")
+            return
 
         # TestAsp.Net vulnerable site patterns
         if 'testaspnet.vulnweb.com' in domain or target_url.startswith('http://testaspnet.vulnweb.com'):
@@ -2592,7 +2599,7 @@ class ScannerEngine(QObject):
             self.log_message.emit(f"⚠️ Main URL test failed: {str(e)}", "warning")
 
         # Add more test sites as needed
-        elif 'testphp.vulnweb.com' in domain:
+        if 'testphp.vulnweb.com' in domain:
             self.log_message.emit("🎯 Detected TestPHP - testing known vulnerable patterns", "info")
             # Add PHP-specific tests here
 
