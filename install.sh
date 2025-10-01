@@ -57,7 +57,7 @@ update_system() {
 install_system_deps() {
     print_status "Installing system dependencies..."
     
-    # Essential packages (PyQt6 will be installed via pip)
+    # Essential packages (PyQt6 will be installed via pip with its own Qt)
     sudo apt install -y \
         python3 \
         python3-pip \
@@ -69,13 +69,8 @@ install_system_deps() {
         wget \
         unzip \
         default-jdk \
-        qt6-base-dev \
-        qt6-tools-dev \
-        libqt6gui6 \
-        libqt6widgets6 \
         libgl1-mesa-dev \
         libglib2.0-dev \
-        libgstreamer-plugins-base1.0-dev \
         pkg-config
     
     print_success "System dependencies installed"

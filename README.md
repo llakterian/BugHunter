@@ -1,138 +1,197 @@
-# Bug Bounty Hunter Pro
+# 🐛 BugHunter Pro - Advanced Security Testing Platform
 
-## 🚀 Advanced Security Testing Platform (33X More Robust)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![PyQt6](https://img.shields.io/badge/PyQt-6.0+-green.svg)](https://pypi.org/project/PyQt6/)
 
-A comprehensive GUI-based security testing tool designed for ethical bug bounty hunters and security professionals.
+A comprehensive, professional-grade vulnerability scanner and bug bounty hunting platform built with Python and PyQt6. Designed for ethical security researchers and bug bounty hunters.
 
-## ✨ Features
+## ✨ Key Features
 
-- **Mass CVE Scanning** - Shodan integration for large-scale vulnerability hunting
-- **Hidden Element Discovery** - Bookmarklet-based tools to reveal client-side restrictions
-- **Automated Recon** - Multi-source URL discovery (AlienVault, Wayback, URLScan, VirusTotal)
-- **GF Pattern Filtering** - Advanced URL filtering with custom patterns and deduplication
-- **LostFuzzer Integration** - Passive URL fuzzing and Nuclei DAST scanning
-- **Complete Workflow Automation** - End-to-end bug hunting pipeline
+### 🔍 Advanced Vulnerability Detection
+- **Real-World Scanning**: Discovers actual input fields from live websites (not hardcoded examples)
+- **Multi-Engine Detection**: Combines manual testing with professional tools
+- **Comprehensive Coverage**:
+  - SQL Injection (error-based, time-based, boolean-based)
+  - Cross-Site Scripting (XSS) with context-aware detection
+  - Command Injection
+  - Directory Traversal
+  - File Inclusion vulnerabilities
+  - IDOR (Insecure Direct Object References)
+  - Known vulnerable site patterns
 
-## 🛠 Installation
+### 🛠️ Professional Tool Integration
+- **Nuclei**: Template-based vulnerability scanning
+- **Lost Fuzzer**: Advanced fuzzing capabilities
+- **OWASP ZAP**: Integrated web application scanner
+- **Custom Wordlists**: Extensive payload collections
 
-### Quick Install (Recommended)
+### 🎯 Bug Bounty Focused
+- **Automated Reconnaissance**: Subdomain enumeration and target discovery
+- **Intelligence Dashboard**: Track bounties and vulnerabilities
+- **Report Generation**: Professional vulnerability reports
+- **Bounty Monitoring**: Real-time program updates
+
+### 🖥️ Modern Desktop Application
+- **Cross-Platform**: Windows, macOS, Linux support
+- **Intuitive GUI**: User-friendly interface with real-time progress
+- **Multi-Threading**: Concurrent scanning for efficiency
+- **Secure Authentication**: Encrypted user management
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.11 or higher
+- 4GB RAM minimum (8GB recommended)
+- Internet connection for scanning
+
+### Installation
+
+#### On Linux (Parrot OS, Kali Linux, Ubuntu)
 ```bash
-git clone <repository>
-cd bug-bounty-hunter-pro
-./install.sh
-```
-
-### Manual Installation
-```bash
-# Install system dependencies
-sudo apt update
-sudo apt install python3 python3-pip python3-venv qt6-base-dev
-
-# Create virtual environment
-python3 -m venv bug_bounty_env
-source bug_bounty_env/bin/activate
-
-# Install Python dependencies
-pip install PyQt6 requests python-owasp-zap-v2.4 beautifulsoup4 lxml bcrypt pyjwt cryptography
-
-# Install OWASP ZAP (optional but recommended)
-# Download from: https://www.zaproxy.org/download/
-```
-
-## 🚀 Running the Application
-
-### GUI Mode (Desktop Environment)
-```bash
-# From the application directory
-./run.sh
-
-# Or double-click the desktop icon after installation
-```
-
-### Headless Mode (Servers/SSH)
-```bash
-# Set offscreen rendering
-QT_QPA_PLATFORM=offscreen ./run.sh
-```
-
-### First Run Credentials
-On first run, the application generates random admin credentials. Check the console output for:
-- Username: admin
-- Password: [randomly generated 16-character password]
-
-**⚠️ IMPORTANT:** Save these credentials and change the password after first login!
-
-## 🔧 Troubleshooting
-
-### "Cannot find login page" or "App doesn't show"
-- Ensure you have a desktop environment installed
-- Check if DISPLAY environment variable is set: `echo $DISPLAY`
-- For headless servers, use: `QT_QPA_PLATFORM=offscreen ./run.sh`
-
-### Permission Issues
-```bash
-chmod +x run.sh
+git clone https://github.com/llakterian/BugHunter.git
+cd BugHunter
 chmod +x install.sh
+./install.sh
+./run.sh
 ```
 
-### Virtual Environment Issues
+#### On macOS
 ```bash
-# Recreate virtual environment
-rm -rf bug_bounty_env
-python3 -m venv bug_bounty_env
-source bug_bounty_env/bin/activate
-pip install -r requirements.txt
+git clone https://github.com/llakterian/BugHunter.git
+cd BugHunter
+chmod +x setup_macos.sh
+./setup_macos.sh
 ```
 
-### Desktop Icon Not Working
+#### On Windows
+1. Download and extract the repository
+2. Run `setup_windows.bat` as Administrator
+3. Double-click `run.bat` to launch
+
+### First Run
+- Default login: `admin` / `BugHunter2024!`
+- **Important**: Change the default password immediately!
+
+## 📖 Usage Guide
+
+### Basic Scanning
+1. Launch the application
+2. Enter target URL (e.g., `http://testaspnet.vulnweb.com`)
+3. Select scan types (SQLi, XSS, etc.)
+4. Click "Start Scan"
+5. View results in real-time
+
+### Advanced Features
+- **Custom Wordlists**: Import your own payloads
+- **Proxy Configuration**: Route through Burp/ZAP
+- **Report Export**: Generate detailed vulnerability reports
+- **API Integration**: Connect with external tools
+
+## 🏗️ Architecture
+
+```
+BugHunter/
+├── Core Engine
+│   ├── scanner_engine.py     # Main scanning logic
+│   ├── vulnerability_validator.py # Detection validation
+│   └── tool_integrations.py  # External tool management
+├── GUI Components
+│   ├── main.py              # Application entry point
+│   ├── main_dashboard.py    # Main interface
+│   └── login_window.py      # Authentication
+├── Tool Integrations
+│   ├── nuclei_shodan_integration.py
+│   ├── lost_fuzzer.py
+│   └── zap_manager.py
+├── Data Management
+│   ├── wordlist_manager.py
+│   ├── auth_manager.py
+│   └── config_manager.py
+└── Assets & Config
+    ├── assets/              # Icons and resources
+    ├── wordlists/           # Payload collections
+    └── data/                # Application data
+```
+
+## 🔧 Configuration
+
+### Environment Variables
 ```bash
-# Refresh desktop database
-update-desktop-database ~/.local/share/applications/
-
-# Or manually create desktop entry
-cp /path/to/app/assets/icon.png ~/.icons/
-sudo cp ~/.local/share/applications/bug-bounty-hunter-pro.desktop /usr/share/applications/
+# Optional: Configure proxy
+export HTTP_PROXY=http://127.0.0.1:8080
+export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-## 📋 System Requirements
+### Custom Wordlists
+Place your wordlists in the `wordlists/` directory:
+- `sqli_payloads.txt` - SQL injection payloads
+- `xss_payloads.txt` - XSS test cases
+- `lfi_payloads.txt` - File inclusion tests
 
-- **OS**: Linux (Kali Linux, Parrot OS, Ubuntu recommended)
-- **Python**: 3.8-3.12
-- **RAM**: 4GB minimum, 8GB recommended
+## 🛡️ Security & Ethics
+
+### ⚠️ Important Security Notice
+This application is designed for **authorized security testing only**. It is a desktop application that requires local installation and cannot be run from web browsers or GitHub Pages.
+
+- **Never scan without permission**
+- **Respect scope limitations**
+- **Follow bug bounty program rules**
+- **Report vulnerabilities responsibly**
+
+### 🔒 Application Security
+- Encrypted user credentials
+- Secure session management
+- No external data transmission without user consent
+- Local-only execution (cannot run in browsers)
+
+## 📊 Performance
+
+### System Requirements
+- **Minimum**: 4GB RAM, Dual-core CPU
+- **Recommended**: 8GB RAM, Quad-core CPU
 - **Storage**: 2GB free space
-- **Display**: X11/Wayland for GUI mode
 
-## 🔐 Security Features
+### Scanning Performance
+- **Basic Scan**: ~30 seconds per target
+- **Full Scan**: 5-15 minutes depending on target complexity
+- **Concurrent Threads**: Configurable (default: 5)
 
-- **Secure Authentication**: bcrypt password hashing
-- **Session Management**: Automatic logout on inactivity
-- **Rate Limiting**: Brute force protection on login
-- **Ethical Use Enforcement**: Required agreement to ethical guidelines
-- **Input Validation**: Comprehensive form validation
+## 🤝 Contributing
 
-## 📖 Usage
+We welcome contributions! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+4. Follow our coding standards
 
-1. **Login** with admin credentials (shown on first run)
-2. **Navigate** through the tabbed interface
-3. **Configure** your scanning parameters
-4. **Run** automated scans and manual tests
-5. **Generate** comprehensive reports
+### Development Setup
+```bash
+git clone https://github.com/llakterian/BugHunter.git
+cd BugHunter
+python -m venv dev_env
+source dev_env/bin/activate  # On Windows: dev_env\Scripts\activate
+pip install -r requirements-dev.txt
+python main.py
+```
 
-## 🆘 Support
+## 📝 License
 
-- Check the logs in the `logs/` directory for errors
-- Run `./test_app.py` to verify component functionality
-- Ensure all dependencies are properly installed
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## ⚖️ Legal & Ethical Notice
+## 🙏 Acknowledgments
 
-This tool is intended **only for authorized bug bounty hunting and security testing**. Unauthorized use for malicious purposes is strictly prohibited and may be illegal. By using this tool, you agree to:
+- OWASP for vulnerability research
+- Nuclei project for scanning templates
+- PyQt6 community for the GUI framework
+- Security researchers worldwide
 
-- Only test systems you own or have explicit permission to test
-- Comply with all applicable laws and regulations
-- Respect the terms of service of target platforms
-- Report findings responsibly through proper channels
+## 📞 Support
 
-## 📄 License
+- **Issues**: [GitHub Issues](https://github.com/llakterian/BugHunter/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/llakterian/BugHunter/discussions)
+- **Documentation**: [Wiki](https://github.com/llakterian/BugHunter/wiki)
 
-This project is licensed under appropriate terms. See LICENSE file for details.
+---
+
+**Remember**: With great power comes great responsibility. Use this tool ethically and legally! 🔒
