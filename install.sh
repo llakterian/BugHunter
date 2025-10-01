@@ -71,7 +71,8 @@ install_system_deps() {
         default-jdk \
         libgl1-mesa-dev \
         libglib2.0-dev \
-        pkg-config
+        pkg-config \
+        fonts-urw-base35
     
     print_success "System dependencies installed"
 }
@@ -100,9 +101,13 @@ install_zap() {
 # Create virtual environment and install Python dependencies
 setup_python_env() {
     print_status "Setting up Python virtual environment..."
-    
-    # Create virtual environment
-    python3 -m venv bug_bounty_env
+
+    # Create virtual environment if it doesn't exist
+    if [ ! -d "bug_bounty_env" ]; then
+        python3 -m venv bug_bounty_env
+    else
+        print_success "Virtual environment already exists"
+    fi
     
     # Activate virtual environment
     source bug_bounty_env/bin/activate
@@ -217,7 +222,11 @@ EOF
     
     # Convert SVG to PNG if possible
     if command -v convert &> /dev/null; then
-        convert assets/icon.svg assets/icon.png
+        if convert assets/icon.svg assets/icon.png 2>/dev/null; then
+            print_success "Icon PNG created"
+        else
+            print_warning "Could not create PNG icon (font issue), SVG icon available"
+        fi
     fi
     
     print_success "Application assets created"
