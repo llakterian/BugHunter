@@ -32,14 +32,16 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if running on Kali Linux
-check_kali() {
+# Check if running on Kali Linux or Parrot OS
+check_os() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         if [[ "$ID" == "kali" ]]; then
             print_success "Running on Kali Linux"
+        elif [[ "$ID" == "parrot" ]]; then
+            print_success "Running on Parrot OS"
         else
-            print_warning "Not running on Kali Linux. Some features may not work as expected."
+            print_warning "Not running on Kali Linux or Parrot OS. Some features may not work as expected."
         fi
     fi
 }
@@ -55,7 +57,7 @@ update_system() {
 install_system_deps() {
     print_status "Installing system dependencies..."
     
-    # Essential packages
+    # Essential packages (PyQt6 will be installed via pip)
     sudo apt install -y \
         python3 \
         python3-pip \
@@ -68,10 +70,13 @@ install_system_deps() {
         unzip \
         default-jdk \
         qt6-base-dev \
-        python3-pyqt6 \
-        python3-pyqt6.qtcore \
-        python3-pyqt6.qtgui \
-        python3-pyqt6.qtwidgets
+        qt6-tools-dev \
+        libqt6gui6 \
+        libqt6widgets6 \
+        libgl1-mesa-dev \
+        libglib2.0-dev \
+        libgstreamer-plugins-base1.0-dev \
+        pkg-config
     
     print_success "System dependencies installed"
 }
@@ -124,7 +129,18 @@ setup_python_env() {
         lxml \
         dnspython \
         python-nmap \
-        scapy
+        scapy \
+        colorlog \
+        jsonschema \
+        flask \
+        uro \
+        pytest \
+        pytest-cov \
+        black \
+        flake8 \
+        isort \
+        mypy \
+        pylint
     
     print_success "Python environment set up"
 }
@@ -229,7 +245,7 @@ main() {
     print_status "Starting Bug Bounty Hunter Pro installation..."
     echo
     
-    check_kali
+    check_os
     update_system
     install_system_deps
     install_zap

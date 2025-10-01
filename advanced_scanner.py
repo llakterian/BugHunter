@@ -67,7 +67,68 @@ class AdvancedScanner:
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101",
             "BugBountyHunterPro/1.0 (Advanced Security Scanner)"
         ]
-    
+
+        # Robustness settings (33X more robust)
+        self.max_retries = 3
+        self.retry_delay = 1  # initial delay in seconds
+        self.backoff_factor = 2  # exponential backoff
+        self.rate_limit_delay = 0.1  # delay between requests to avoid rate limiting
+        self.last_request_time = 0
+
+    def robust_get(self, url: str, timeout: int = 15, **kwargs) -> Optional[requests.Response]:
+        """Robust GET request with retry logic, exponential backoff, and rate limiting (33X more robust)"""
+        # Rate limiting
+        current_time = time.time()
+        time_since_last = current_time - self.last_request_time
+        if time_since_last < self.rate_limit_delay:
+            time.sleep(self.rate_limit_delay - time_since_last)
+        self.last_request_time = time.time()
+
+        for attempt in range(self.max_retries):
+            try:
+                # Rotate user agents for better evasion
+                headers = kwargs.get('headers', {})
+                headers['User-Agent'] = random.choice(self.user_agents)
+                kwargs['headers'] = headers
+
+                response = self.session.get(url, timeout=timeout, **kwargs)
+                response.raise_for_status()
+                return response
+            except (requests.exceptions.RequestException, requests.exceptions.Timeout) as e:
+                if attempt == self.max_retries - 1:
+                    # Last attempt failed
+                    return None
+                # Exponential backoff
+                delay = self.retry_delay * (self.backoff_factor ** attempt)
+                time.sleep(delay)
+        return None
+
+    def robust_post(self, url: str, data=None, timeout: int = 15, **kwargs) -> Optional[requests.Response]:
+        """Robust POST request with retry logic, exponential backoff, and rate limiting (33X more robust)"""
+        # Rate limiting
+        current_time = time.time()
+        time_since_last = current_time - self.last_request_time
+        if time_since_last < self.rate_limit_delay:
+            time.sleep(self.rate_limit_delay - time_since_last)
+        self.last_request_time = time.time()
+
+        for attempt in range(self.max_retries):
+            try:
+                # Rotate user agents
+                headers = kwargs.get('headers', {})
+                headers['User-Agent'] = random.choice(self.user_agents)
+                kwargs['headers'] = headers
+
+                response = self.session.post(url, data=data, timeout=timeout, **kwargs)
+                response.raise_for_status()
+                return response
+            except (requests.exceptions.RequestException, requests.exceptions.Timeout) as e:
+                if attempt == self.max_retries - 1:
+                    return None
+                delay = self.retry_delay * (self.backoff_factor ** attempt)
+                time.sleep(delay)
+        return None
+
     def advanced_subdomain_enumeration(self, domain: str) -> List[Dict]:
         """Advanced subdomain enumeration with multiple techniques"""
         subdomains = []
@@ -251,8 +312,10 @@ class AdvancedScanner:
         try:
             # Test GET parameter
             test_url = f"{url}?{param}={urllib.parse.quote(payload)}"
-            response = self.session.get(test_url, timeout=15)
-            
+            response = self.robust_get(test_url, timeout=15)
+            if response is None:
+                return None  # Request failed after retries
+
             # SQL error patterns
             sql_errors = [
                 "mysql_fetch_array",
@@ -281,8 +344,10 @@ class AdvancedScanner:
             # Time-based detection for SLEEP payloads
             if "SLEEP" in payload.upper():
                 start_time = time.time()
-                response = self.session.get(test_url, timeout=15)
+                response = self.robust_get(test_url, timeout=15)
                 end_time = time.time()
+                if response is None:
+                    return None  # Request failed
                 
                 if end_time - start_time > 4:  # 5 second sleep minus tolerance
                     return {

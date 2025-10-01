@@ -1,0 +1,10 @@
+    required when submitting a report?
+
+Provide the information asked for by the new report form, following the instructions there. Some important considerations include: 
+
+    Title – this should be a quick and clear summary of your issue. 
+    Asset – this should match exactly the asset you are reporting, or “Other”. 
+    Severity – the CVSS calculator is used to evaluate severity and bounty, so to avoid disappointment, be honest and critical when scoring severity. 
+    Weakness – select the most appropriate vulnerability type.  
+    Description – provide all the requested fields. 
+

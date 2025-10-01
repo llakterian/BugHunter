@@ -31,6 +31,9 @@ pyinstaller
 # Additional Security Tools
 scapy>=2.4.5
 
+# URL Processing Tools
+uro>=1.0.0
+
 # JSON and Data Processing
 jsonschema>=4.17.0
 

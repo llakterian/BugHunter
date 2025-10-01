@@ -15,6 +15,108 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
 
 class EnhancedXSSEngine:
+    def advanced_crawl_with_selenium(self, url: str, max_depth: int = 2) -> List[str]:
+        """Use Selenium headless browser to crawl and discover parameters/forms."""
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.common.by import By
+        import time as t
+        options = Options()
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
+        driver = webdriver.Chrome(options=options)
+        visited = set()
+        to_visit = [(url, 0)]
+        found_params = []
+        try:
+            while to_visit:
+                current_url, depth = to_visit.pop(0)
+                if current_url in visited or depth > max_depth:
+                    continue
+                visited.add(current_url)
+                driver.get(current_url)
+                t.sleep(1)
+                # Find forms and their parameters
+                forms = driver.find_elements(By.TAG_NAME, 'form')
+                for form in forms:
+                    inputs = form.find_elements(By.TAG_NAME, 'input')
+                    for input_tag in inputs:
+                        name = input_tag.get_attribute('name')
+                        if name and name not in found_params:
+                            found_params.append(name)
+                # Find links to crawl further
+                links = driver.find_elements(By.TAG_NAME, 'a')
+                for a in links:
+                    href = a.get_attribute('href')
+                    if href and href.startswith(url):
+                        to_visit.append((href, depth+1))
+        finally:
+            driver.quit()
+        return found_params
+    def dom_xss_with_selenium(self, url: str, payloads: List[str]) -> List[Dict]:
+        """Test DOM XSS using Selenium headless browser."""
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.common.by import By
+        import time as t
+        options = Options()
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
+        driver = webdriver.Chrome(options=options)
+        dom_vulnerabilities = []
+        try:
+            for payload in payloads:
+                test_url = url + payload
+                driver.get(test_url)
+                t.sleep(1)
+                page_source = driver.page_source
+                if payload.replace('#', '') in page_source:
+                    dom_vulnerabilities.append({
+                        'url': test_url,
+                        'type': 'DOM XSS',
+                        'payload': payload,
+                        'severity': 'High',
+                        'evidence': payload
+                    })
+        finally:
+            driver.quit()
+        return dom_vulnerabilities
+    def set_custom_payloads(self, payloads: List[str]):
+        """Set custom payloads for XSS testing."""
+        self.custom_payloads = payloads
+    def crawl_site(self, url: str, max_depth: int = 2) -> List[str]:
+        """Crawl the site to discover more URLs and parameters."""
+        visited = set()
+        to_visit = [(url, 0)]
+        found_params = []
+        while to_visit:
+            current_url, depth = to_visit.pop(0)
+            if current_url in visited or depth > max_depth:
+                continue
+            visited.add(current_url)
+            try:
+                resp = self.session.get(current_url, timeout=self.timeout)
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                # Find forms and their parameters
+                for form in soup.find_all('form'):
+                    for input_tag in form.find_all('input'):
+                        name = input_tag.get('name')
+                        if name and name not in found_params:
+                            found_params.append(name)
+                # Find links to crawl further
+                for a in soup.find_all('a', href=True):
+                    href = a['href']
+                    if href.startswith('/'):
+                        next_url = urllib.parse.urljoin(current_url, href)
+                        to_visit.append((next_url, depth+1))
+            except Exception:
+                continue
+        return found_params
+    def set_auth_cookie(self, cookie: str):
+        """Set authentication cookie for session."""
+        self.session.headers.update({'Cookie': cookie})
     def __init__(self, max_threads: int = 10, timeout: int = 10):
         self.max_threads = max_threads
         self.timeout = timeout
@@ -362,8 +464,8 @@ class EnhancedXSSEngine:
         return dom_vulnerabilities
     
     def comprehensive_xss_scan(self, url: str, parameters: List[str], 
-                             methods: List[str] = ['GET', 'POST']) -> Dict:
-        """Comprehensive XSS scanning with threading"""
+                             methods: List[str] = ['GET', 'POST'], progress_callback=None) -> Dict:
+        """Comprehensive XSS scanning with threading and real-time progress callback"""
         results = {
             'url': url,
             'total_parameters': len(parameters),
@@ -372,36 +474,96 @@ class EnhancedXSSEngine:
             'scan_time': 0,
             'errors': []
         }
-        
+
         start_time = time.time()
-        
+
         try:
-            # Test DOM XSS first
-            print(f"🔍 Testing DOM XSS for {url}")
-            results['dom_vulnerabilities'] = self.test_dom_xss(url)
-            
+            # Advanced crawling with Selenium
+            crawled_params = self.advanced_crawl_with_selenium(url)
+            for p in crawled_params:
+                if p not in parameters:
+                    parameters.append(p)
+            # Test DOM XSS with Selenium
+            print(f"🔍 Testing DOM XSS for {url} (Selenium)")
+            dom_payloads = [
+                '#<script>alert("DOM-XSS")</script>',
+                '#"><script>alert("DOM-XSS")</script>',
+                '#javascript:alert("DOM-XSS")',
+                '#<img src=x onerror=alert("DOM-XSS")>',
+                '#<svg onload=alert("DOM-XSS")>'
+            ]
+            results['dom_vulnerabilities'] = self.dom_xss_with_selenium(url, dom_payloads)
+
+            # Use custom payloads if set
+            payloads = getattr(self, 'custom_payloads', None)
             # Test parameters with threading
+            total_tests = len(parameters) * len(methods)
+            done = 0
+            findings = 0
             with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
                 futures = []
-                
+                param_method_map = []
                 for param in parameters:
                     for method in methods:
-                        future = executor.submit(self.test_single_parameter, url, param, method)
-                        futures.append(future)
-                
-                # Collect results
-                for future in as_completed(futures):
+                        if payloads:
+                            futures.append(executor.submit(self.test_single_parameter_with_payloads, url, param, method, payloads))
+                        else:
+                            futures.append(executor.submit(self.test_single_parameter, url, param, method))
+                        param_method_map.append((param, method))
+
+                for i, future in enumerate(as_completed(futures)):
+                    param, method = param_method_map[i]
+                    error_count = len(results['errors'])
                     try:
                         param_results = future.result()
                         results['vulnerabilities'].extend(param_results)
+                        findings += len(param_results)
                     except Exception as e:
                         results['errors'].append(str(e))
-        
+                        error_count = len(results['errors'])
+                    done += 1
+                    if progress_callback:
+                        progress_callback(done, findings, error_count, param, method)
+
         except Exception as e:
             results['errors'].append(f"Scan failed: {str(e)}")
-        
+
         results['scan_time'] = time.time() - start_time
         return results
+    def test_single_parameter_with_payloads(self, url: str, param: str, method: str, payloads: List[str]) -> List[Dict]:
+        """Test a single parameter for XSS vulnerabilities using custom payloads."""
+        vulnerabilities = []
+        test_id = hashlib.md5(f"{url}{param}{time.time()}".encode()).hexdigest()[:8]
+        for payload in payloads:
+            try:
+                if method.upper() == 'GET':
+                    params = {param: payload}
+                    response = self.session.get(url, params=params, timeout=self.timeout)
+                else:
+                    data = {param: payload}
+                    response = self.session.post(url, data=data, timeout=self.timeout)
+                if self.is_xss_vulnerable(response.text, payload, test_id):
+                    context = self.detect_context(response.text, payload)
+                    vulnerability = {
+                        'url': response.url,
+                        'parameter': param,
+                        'payload': payload,
+                        'method': method,
+                        'context': context,
+                        'response_length': len(response.text),
+                        'status_code': response.status_code,
+                        'test_id': test_id,
+                        'severity': self.calculate_severity(context, payload),
+                        'evidence': self.extract_evidence(response.text, payload)
+                    }
+                    vulnerabilities.append(vulnerability)
+                    break
+            except requests.RequestException:
+                continue
+            except Exception:
+                continue
+            time.sleep(0.1)
+        return vulnerabilities
     
     def generate_xss_report(self, scan_results: Dict) -> str:
         """Generate detailed XSS vulnerability report"""

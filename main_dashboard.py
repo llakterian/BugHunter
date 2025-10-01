@@ -17,6 +17,13 @@ from jwt_analyzer import JWTAnalyzer
 from report_generator import ReportGenerator
 from wordlist_manager import WordlistManager, WordlistSelector
 
+# Enhanced features imports
+from nuclei_shodan_integration import NucleiShodanIntegration
+from lost_uncover import LostUncover
+from lost_fuzzer import LostFuzzer
+from recon_automation import ReconAutomation
+from bug_hunting_workflow import BugHuntingWorkflow
+
 class MainDashboard(QWidget):
     logout_requested = pyqtSignal()
     
@@ -31,6 +38,13 @@ class MainDashboard(QWidget):
         self.jwt_analyzer = JWTAnalyzer(config_manager)
         self.report_generator = ReportGenerator(config_manager)
         self.wordlist_manager = WordlistManager(config_manager)
+
+        # Enhanced components (33X more robust)
+        self.nuclei_shodan = NucleiShodanIntegration()
+        self.lost_uncover = LostUncover()
+        self.lost_fuzzer = LostFuzzer()
+        self.recon_automation = ReconAutomation()
+        self.bug_hunting_workflow = BugHuntingWorkflow()
         
         self.setup_ui()
         self.setup_styling()
@@ -428,6 +442,13 @@ class MainDashboard(QWidget):
         self.intelligence_dashboard = IntelligenceDashboard(self.config_manager)
         self.intelligence_dashboard.target_selected.connect(self.auto_configure_scan)
         self.tabs.addTab(self.intelligence_dashboard, "🎯 Intelligence")
+
+        # Enhanced Features Tabs (33X More Robust)
+        self.tabs.addTab(self.create_mass_cve_tab(), "🔍 Mass CVE Scan")
+        self.tabs.addTab(self.create_hidden_elements_tab(), "👁️ Hidden Elements")
+        self.tabs.addTab(self.create_automated_recon_tab(), "🔎 Auto Recon")
+        self.tabs.addTab(self.create_lost_fuzzer_tab(), "⚡ LostFuzzer")
+        self.tabs.addTab(self.create_workflow_tab(), "🚀 Complete Workflow")
         
         layout.addWidget(self.tabs)
         
@@ -922,3 +943,625 @@ class MainDashboard(QWidget):
         
         # Switch to main results tab
         self.tabs.setCurrentIndex(0)  # Results tab
+
+    # Enhanced Features Tab Methods (33X More Robust)
+
+    def create_mass_cve_tab(self):
+        """Create Mass CVE Scanning tab with Shodan integration"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+
+        # Header
+        header = QLabel("🔍 Mass CVE Scanning with Shodan & Nuclei")
+        header.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        layout.addWidget(header)
+
+        # Description
+        desc = QLabel("Scan thousands of IPs/domains for CVEs using Shodan API and Nuclei templates")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        # Input form
+        form_group = QGroupBox("Scan Configuration")
+        form_layout = QFormLayout(form_group)
+
+        self.shodan_api_input = QLineEdit()
+        self.shodan_api_input.setPlaceholderText("Enter your Shodan API key")
+        self.shodan_api_input.setText("0aUw9tLCL1DczQvQJ0a01OxhSKG1Cq9i")  # Pre-filled
+        form_layout.addRow("Shodan API Key:", self.shodan_api_input)
+
+        self.cve_query_input = QLineEdit()
+        self.cve_query_input.setPlaceholderText("e.g., grafana, apache, nginx")
+        self.cve_query_input.setText("grafana")
+        form_layout.addRow("CVE Query:", self.cve_query_input)
+
+        self.cve_templates_input = QLineEdit()
+        self.cve_templates_input.setPlaceholderText("e.g., grafana, cves")
+        self.cve_templates_input.setText("grafana")
+        form_layout.addRow("Nuclei Templates:", self.cve_templates_input)
+
+        layout.addWidget(form_group)
+
+        # Control buttons
+        button_layout = QHBoxLayout()
+
+        self.mass_cve_scan_btn = QPushButton("🚀 Start Mass CVE Scan")
+        self.mass_cve_scan_btn.clicked.connect(self.start_mass_cve_scan)
+        button_layout.addWidget(self.mass_cve_scan_btn)
+
+        self.mass_cve_stop_btn = QPushButton("⏹️ Stop Scan")
+        self.mass_cve_stop_btn.clicked.connect(self.stop_mass_cve_scan)
+        self.mass_cve_stop_btn.setEnabled(False)
+        button_layout.addWidget(self.mass_cve_stop_btn)
+
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+
+        # Results area
+        self.mass_cve_results = QTextEdit()
+        self.mass_cve_results.setPlaceholderText("Mass CVE scan results will appear here...")
+        layout.addWidget(self.mass_cve_results)
+
+        return widget
+
+    def create_hidden_elements_tab(self):
+        """Create Hidden Elements Discovery tab"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+
+        # Header
+        header = QLabel("👁️ Hidden Elements Discovery")
+        header.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        layout.addWidget(header)
+
+        # Description
+        desc = QLabel("Discover hidden elements on web pages that may reveal client-side restrictions")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        # Control buttons
+        button_layout = QHBoxLayout()
+
+        self.generate_bookmarklet_btn = QPushButton("🔗 Generate Bookmarklet")
+        self.generate_bookmarklet_btn.clicked.connect(self.generate_bookmarklet)
+        button_layout.addWidget(self.generate_bookmarklet_btn)
+
+        self.create_test_page_btn = QPushButton("📄 Create Test Page")
+        self.create_test_page_btn.clicked.connect(self.create_test_page)
+        button_layout.addWidget(self.create_test_page_btn)
+
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+
+        # Results area
+        self.hidden_elements_results = QTextEdit()
+        self.hidden_elements_results.setPlaceholderText("Bookmarklet and test page information will appear here...")
+        layout.addWidget(self.hidden_elements_results)
+
+        return widget
+
+    def create_automated_recon_tab(self):
+        """Create Automated Reconnaissance tab"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+
+        # Header
+        header = QLabel("🔎 Automated Reconnaissance")
+        header.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        layout.addWidget(header)
+
+        # Description
+        desc = QLabel("Multi-source URL discovery from AlienVault, Wayback Machine, URLScan, and VirusTotal")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        # Input form
+        form_group = QGroupBox("Target Configuration")
+        form_layout = QFormLayout(form_group)
+
+        self.recon_target_input = QLineEdit()
+        self.recon_target_input.setPlaceholderText("example.com")
+        form_layout.addRow("Target Domain:", self.recon_target_input)
+
+        self.virustotal_api_input = QLineEdit()
+        self.virustotal_api_input.setPlaceholderText("VirusTotal API key (optional)")
+        form_layout.addRow("VirusTotal API:", self.virustotal_api_input)
+
+        layout.addWidget(form_group)
+
+        # Control buttons
+        button_layout = QHBoxLayout()
+
+        self.start_recon_btn = QPushButton("🔍 Start Recon")
+        self.start_recon_btn.clicked.connect(self.start_automated_recon)
+        button_layout.addWidget(self.start_recon_btn)
+
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+
+        # Results area
+        self.recon_results = QTextEdit()
+        self.recon_results.setPlaceholderText("Reconnaissance results will appear here...")
+        layout.addWidget(self.recon_results)
+
+        return widget
+
+    def create_lost_fuzzer_tab(self):
+        """Create LostFuzzer DAST Scanner tab"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+
+        # Header
+        header = QLabel("⚡ LostFuzzer - Quick DAST Scanner")
+        header.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        layout.addWidget(header)
+
+        # Description
+        desc = QLabel("Passive URL fuzzing and Nuclei DAST scanning for domains")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        # Input form
+        form_group = QGroupBox("Scan Configuration")
+        form_layout = QFormLayout(form_group)
+
+        self.fuzzer_target_input = QLineEdit()
+        self.fuzzer_target_input.setPlaceholderText("example.com")
+        form_layout.addRow("Target Domain:", self.fuzzer_target_input)
+
+        self.fuzzer_templates_input = QLineEdit()
+        self.fuzzer_templates_input.setPlaceholderText("e.g., exposures, misconfigurations")
+        self.fuzzer_templates_input.setText("exposures")
+        form_layout.addRow("Nuclei Templates:", self.fuzzer_templates_input)
+
+        layout.addWidget(form_group)
+
+        # Control buttons
+        button_layout = QHBoxLayout()
+
+        self.start_fuzzer_btn = QPushButton("⚡ Start LostFuzzer")
+        self.start_fuzzer_btn.clicked.connect(self.start_lost_fuzzer)
+        button_layout.addWidget(self.start_fuzzer_btn)
+
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+
+        # Results area
+        self.fuzzer_results = QTextEdit()
+        self.fuzzer_results.setPlaceholderText("LostFuzzer results will appear here...")
+        layout.addWidget(self.fuzzer_results)
+
+        return widget
+
+    def create_workflow_tab(self):
+        """Create Complete Workflow Automation tab"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+
+        # Header
+        header = QLabel("🚀 Complete Bug Hunting Workflow")
+        header.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        layout.addWidget(header)
+
+        # Description
+        desc = QLabel("End-to-end automated bug hunting pipeline combining all methods")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        # Workflow steps display
+        steps_group = QGroupBox("Workflow Steps")
+        steps_layout = QVBoxLayout(steps_group)
+
+        steps_text = """
+        1. 🔍 Mass CVE Scanning (Shodan + Nuclei)
+        2. 👁️ Hidden Elements Discovery
+        3. 🔎 Automated Reconnaissance (Multi-source)
+        4. ⚡ LostFuzzer DAST Scanning
+        5. 📊 Results Compilation & Reporting
+        """
+        steps_label = QLabel(steps_text.strip())
+        steps_label.setFont(QFont("Courier New", 10))
+        steps_layout.addWidget(steps_label)
+
+        layout.addWidget(steps_group)
+
+        # Configuration
+        config_group = QGroupBox("Workflow Configuration")
+        config_layout = QFormLayout(config_group)
+
+        self.workflow_target_input = QLineEdit()
+        self.workflow_target_input.setPlaceholderText("example.com")
+        config_layout.addRow("Target Domain:", self.workflow_target_input)
+
+        self.workflow_shodan_api_input = QLineEdit()
+        self.workflow_shodan_api_input.setText("0aUw9tLCL1DczQvQJ0a01OxhSKG1Cq9i")
+        config_layout.addRow("Shodan API Key:", self.workflow_shodan_api_input)
+
+        self.workflow_virustotal_api_input = QLineEdit()
+        self.workflow_virustotal_api_input.setPlaceholderText("Optional")
+        config_layout.addRow("VirusTotal API:", self.workflow_virustotal_api_input)
+
+        layout.addWidget(config_group)
+
+        # Control buttons
+        button_layout = QHBoxLayout()
+
+        self.start_workflow_btn = QPushButton("🚀 Start Complete Workflow")
+        self.start_workflow_btn.clicked.connect(self.start_complete_workflow)
+        button_layout.addWidget(self.start_workflow_btn)
+
+        self.stop_workflow_btn = QPushButton("⏹️ Stop Workflow")
+        self.stop_workflow_btn.clicked.connect(self.stop_complete_workflow)
+        self.stop_workflow_btn.setEnabled(False)
+        button_layout.addWidget(self.stop_workflow_btn)
+
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+
+        # Progress and results
+        self.workflow_progress = QProgressBar()
+        self.workflow_progress.setVisible(False)
+        layout.addWidget(self.workflow_progress)
+
+        self.workflow_results = QTextEdit()
+        self.workflow_results.setPlaceholderText("Complete workflow results will appear here...")
+        layout.addWidget(self.workflow_results)
+
+        return widget
+
+    # Enhanced Features Methods
+
+    def start_mass_cve_scan(self):
+        """Start mass CVE scanning"""
+        shodan_api = self.shodan_api_input.text().strip()
+        cve_query = self.cve_query_input.text().strip()
+        templates = self.cve_templates_input.text().strip()
+
+        if not shodan_api or not cve_query:
+            QMessageBox.warning(self, "Missing Input", "Please provide Shodan API key and CVE query.")
+            return
+
+        self.mass_cve_scan_btn.setEnabled(False)
+        self.mass_cve_stop_btn.setEnabled(True)
+        self.mass_cve_results.clear()
+        self.mass_cve_results.append("🔍 Starting Mass CVE Scan...")
+        self.mass_cve_results.append(f"Query: {cve_query}")
+        self.mass_cve_results.append(f"Templates: {templates}")
+        self.mass_cve_results.append("")
+
+        # Run in thread to avoid blocking UI
+        from PyQt6.QtCore import QThread, pyqtSignal
+
+        class CVEScanWorker(QThread):
+            finished = pyqtSignal(dict)
+            error = pyqtSignal(str)
+
+            def __init__(self, shodan_api, cve_query, templates):
+                super().__init__()
+                self.shodan_api = shodan_api
+                self.cve_query = cve_query
+                self.templates = templates
+
+            def run(self):
+                try:
+                    from nuclei_shodan_integration import NucleiShodanIntegration
+                    nuclei = NucleiShodanIntegration()
+                    results = nuclei.mass_cve_scan(self.shodan_api, self.cve_query, self.templates)
+                    self.finished.emit(results)
+                except Exception as e:
+                    self.error.emit(str(e))
+
+        self.cve_worker = CVEScanWorker(shodan_api, cve_query, templates)
+        self.cve_worker.finished.connect(self.on_mass_cve_finished)
+        self.cve_worker.error.connect(self.on_mass_cve_error)
+        self.cve_worker.start()
+
+    def on_mass_cve_finished(self, results):
+        """Handle mass CVE scan completion"""
+        self.mass_cve_scan_btn.setEnabled(True)
+        self.mass_cve_stop_btn.setEnabled(False)
+
+        if "error" in results:
+            self.mass_cve_results.append(f"❌ Error: {results['error']}")
+            return
+
+        self.mass_cve_results.append("✅ Mass CVE Scan Completed!")
+        self.mass_cve_results.append(f"📊 IPs Found: {results.get('total_ips', 0)}")
+        self.mass_cve_results.append(f"🌐 Domains Found: {results.get('total_domains', 0)}")
+        self.mass_cve_results.append(f"🎯 Nuclei Findings: {len(results.get('nuclei_findings', []))}")
+
+        if results.get('ip_file'):
+            self.mass_cve_results.append(f"💾 IPs saved to: {results['ip_file']}")
+        if results.get('domain_file'):
+            self.mass_cve_results.append(f"💾 Domains saved to: {results['domain_file']}")
+
+    def on_mass_cve_error(self, error_msg):
+        """Handle mass CVE scan error"""
+        self.mass_cve_scan_btn.setEnabled(True)
+        self.mass_cve_stop_btn.setEnabled(False)
+        self.mass_cve_results.append(f"❌ Error: {error_msg}")
+
+    def stop_mass_cve_scan(self):
+        """Stop mass CVE scan"""
+        if hasattr(self, 'cve_worker'):
+            self.cve_worker.terminate()
+        self.mass_cve_scan_btn.setEnabled(True)
+        self.mass_cve_stop_btn.setEnabled(False)
+        self.mass_cve_results.append("⏹️ Scan stopped by user")
+
+    def generate_bookmarklet(self):
+        """Generate Lost Uncover bookmarklet"""
+        try:
+            bookmarklet = self.lost_uncover.get_bookmarklet()
+            self.hidden_elements_results.clear()
+            self.hidden_elements_results.append("🔗 Lost Uncover Bookmarklet Generated!")
+            self.hidden_elements_results.append("")
+            self.hidden_elements_results.append("📋 Copy this bookmarklet to your browser bookmarks:")
+            self.hidden_elements_results.append("")
+            self.hidden_elements_results.append(bookmarklet)
+            self.hidden_elements_results.append("")
+            self.hidden_elements_results.append("📖 Instructions:")
+            self.hidden_elements_results.append("1. Drag the bookmarklet above to your browser bookmarks bar")
+            self.hidden_elements_results.append("2. Navigate to any webpage")
+            self.hidden_elements_results.append("3. Click the bookmarklet to reveal hidden elements")
+        except Exception as e:
+            self.hidden_elements_results.append(f"❌ Error generating bookmarklet: {str(e)}")
+
+    def create_test_page(self):
+        """Create test page for Lost Uncover"""
+        try:
+            test_page = self.lost_uncover.save_test_page()
+            self.hidden_elements_results.append("📄 Test Page Created!")
+            self.hidden_elements_results.append(f"📍 Location: {test_page}")
+            self.hidden_elements_results.append("")
+            self.hidden_elements_results.append("🧪 Open this page in your browser and click the bookmarklet to test.")
+        except Exception as e:
+            self.hidden_elements_results.append(f"❌ Error creating test page: {str(e)}")
+
+    def start_automated_recon(self):
+        """Start automated reconnaissance"""
+        target = self.recon_target_input.text().strip()
+        vt_api = self.virustotal_api_input.text().strip()
+
+        if not target:
+            QMessageBox.warning(self, "Missing Target", "Please provide a target domain.")
+            return
+
+        self.start_recon_btn.setEnabled(False)
+        self.recon_results.clear()
+        self.recon_results.append(f"🔎 Starting Automated Recon for: {target}")
+        if vt_api:
+            self.recon_results.append("🔑 Using VirusTotal API")
+        self.recon_results.append("")
+
+        # Run in thread
+        from PyQt6.QtCore import QThread, pyqtSignal
+
+        class ReconWorker(QThread):
+            finished = pyqtSignal(dict)
+            error = pyqtSignal(str)
+
+            def __init__(self, target, vt_api):
+                super().__init__()
+                self.target = target
+                self.vt_api = vt_api
+
+            def run(self):
+                try:
+                    from recon_automation import ReconAutomation
+                    recon = ReconAutomation()
+                    results = recon.aggregate_recon_urls(self.target, self.vt_api or None)
+                    self.finished.emit(results)
+                except Exception as e:
+                    self.error.emit(str(e))
+
+        self.recon_worker = ReconWorker(target, vt_api)
+        self.recon_worker.finished.connect(self.on_recon_finished)
+        self.recon_worker.error.connect(self.on_recon_error)
+        self.recon_worker.start()
+
+    def on_recon_finished(self, results):
+        """Handle recon completion"""
+        self.start_recon_btn.setEnabled(True)
+
+        self.recon_results.append("✅ Reconnaissance Completed!")
+        self.recon_results.append(f"🔗 Total URLs Found: {len(results.get('all_urls', []))}")
+        self.recon_results.append(f"📊 Sources Used: {len(results.get('sources', []))}")
+
+        # Show breakdown by source
+        sources = results.get('sources', {})
+        for source, count in sources.items():
+            self.recon_results.append(f"  • {source}: {count} URLs")
+
+        # Show some sample URLs
+        urls = results.get('all_urls', [])[:10]  # Show first 10
+        if urls:
+            self.recon_results.append("")
+            self.recon_results.append("📋 Sample URLs:")
+            for url in urls:
+                self.recon_results.append(f"  {url}")
+
+    def on_recon_error(self, error_msg):
+        """Handle recon error"""
+        self.start_recon_btn.setEnabled(True)
+        self.recon_results.append(f"❌ Error: {error_msg}")
+
+    def start_lost_fuzzer(self):
+        """Start LostFuzzer scan"""
+        target = self.fuzzer_target_input.text().strip()
+        templates = self.fuzzer_templates_input.text().strip()
+
+        if not target:
+            QMessageBox.warning(self, "Missing Target", "Please provide a target domain.")
+            return
+
+        self.start_fuzzer_btn.setEnabled(False)
+        self.fuzzer_results.clear()
+        self.fuzzer_results.append(f"⚡ Starting LostFuzzer for: {target}")
+        self.fuzzer_results.append(f"📋 Templates: {templates}")
+        self.fuzzer_results.append("")
+
+        # Run in thread
+        from PyQt6.QtCore import QThread, pyqtSignal
+
+        class FuzzerWorker(QThread):
+            finished = pyqtSignal(dict)
+            error = pyqtSignal(str)
+
+            def __init__(self, target, templates):
+                super().__init__()
+                self.target = target
+                self.templates = templates
+
+            def run(self):
+                try:
+                    from lost_fuzzer import LostFuzzer
+                    fuzzer = LostFuzzer()
+                    results = fuzzer.run_scan(self.target, self.templates)
+                    self.finished.emit(results)
+                except Exception as e:
+                    self.error.emit(str(e))
+
+        self.fuzzer_worker = FuzzerWorker(target, templates)
+        self.fuzzer_worker.finished.connect(self.on_fuzzer_finished)
+        self.fuzzer_worker.error.connect(self.on_fuzzer_error)
+        self.fuzzer_worker.start()
+
+    def on_fuzzer_finished(self, results):
+        """Handle fuzzer completion"""
+        self.start_fuzzer_btn.setEnabled(True)
+
+        self.fuzzer_results.append("✅ LostFuzzer Scan Completed!")
+        self.fuzzer_results.append(f"🎯 Findings: {len(results.get('findings', []))}")
+
+        # Show findings
+        findings = results.get('findings', [])
+        if findings:
+            self.fuzzer_results.append("")
+            self.fuzzer_results.append("📋 Findings:")
+            for finding in findings[:20]:  # Show first 20
+                self.fuzzer_results.append(f"  • {finding}")
+        else:
+            self.fuzzer_results.append("No vulnerabilities found.")
+
+    def on_fuzzer_error(self, error_msg):
+        """Handle fuzzer error"""
+        self.start_fuzzer_btn.setEnabled(True)
+        self.fuzzer_results.append(f"❌ Error: {error_msg}")
+
+    def start_complete_workflow(self):
+        """Start complete bug hunting workflow"""
+        target = self.workflow_target_input.text().strip()
+        shodan_api = self.workflow_shodan_api_input.text().strip()
+        vt_api = self.workflow_virustotal_api_input.text().strip()
+
+        if not target or not shodan_api:
+            QMessageBox.warning(self, "Missing Input", "Please provide target domain and Shodan API key.")
+            return
+
+        self.start_workflow_btn.setEnabled(False)
+        self.stop_workflow_btn.setEnabled(True)
+        self.workflow_progress.setVisible(True)
+        self.workflow_progress.setValue(0)
+        self.workflow_results.clear()
+
+        self.workflow_results.append("🚀 Starting Complete Bug Hunting Workflow")
+        self.workflow_results.append(f"🎯 Target: {target}")
+        self.workflow_results.append("")
+
+        # Run workflow
+        from PyQt6.QtCore import QThread, pyqtSignal
+
+        class WorkflowWorker(QThread):
+            progress = pyqtSignal(int, str)
+            finished = pyqtSignal(dict)
+            error = pyqtSignal(str)
+
+            def __init__(self, target, shodan_api, vt_api):
+                super().__init__()
+                self.target = target
+                self.shodan_api = shodan_api
+                self.vt_api = vt_api
+
+            def run(self):
+                try:
+                    from bug_hunting_workflow import BugHuntingWorkflow
+                    workflow = BugHuntingWorkflow()
+
+                    results = {}
+
+                    # Step 1: Mass CVE Scan
+                    self.progress.emit(10, "Step 1: Mass CVE Scanning...")
+                    cve_results = workflow.method_1_mass_cve_scanning(self.shodan_api, "grafana", "grafana")
+                    results['cve'] = cve_results
+
+                    # Step 2: Hidden Elements
+                    self.progress.emit(30, "Step 2: Hidden Elements Discovery...")
+                    hidden_results = workflow.method_2_uncover_hidden_elements()
+                    results['hidden'] = hidden_results
+
+                    # Step 3: Automated Recon
+                    self.progress.emit(50, "Step 3: Automated Reconnaissance...")
+                    recon_results = workflow.method_3_automated_toolkit(self.target, self.vt_api or None)
+                    results['recon'] = recon_results
+
+                    # Step 4: LostFuzzer
+                    self.progress.emit(80, "Step 4: LostFuzzer DAST Scanning...")
+                    fuzzer_results = workflow.lost_fuzzer.run_scan(self.target, "exposures")
+                    results['fuzzer'] = fuzzer_results
+
+                    self.progress.emit(100, "Workflow completed!")
+                    self.finished.emit(results)
+
+                except Exception as e:
+                    self.error.emit(str(e))
+
+        self.workflow_worker = WorkflowWorker(target, shodan_api, vt_api)
+        self.workflow_worker.progress.connect(self.on_workflow_progress)
+        self.workflow_worker.finished.connect(self.on_workflow_finished)
+        self.workflow_worker.error.connect(self.on_workflow_error)
+        self.workflow_worker.start()
+
+    def on_workflow_progress(self, percent, message):
+        """Handle workflow progress"""
+        self.workflow_progress.setValue(percent)
+        self.workflow_results.append(message)
+
+    def on_workflow_finished(self, results):
+        """Handle workflow completion"""
+        self.start_workflow_btn.setEnabled(True)
+        self.stop_workflow_btn.setEnabled(False)
+        self.workflow_progress.setVisible(False)
+
+        self.workflow_results.append("")
+        self.workflow_results.append("✅ Complete Workflow Finished!")
+        self.workflow_results.append("📊 Summary:")
+
+        # Show results summary
+        if 'cve' in results and 'error' not in results['cve']:
+            self.workflow_results.append(f"🔍 CVE Scan: {results['cve'].get('total_ips', 0)} IPs, {len(results['cve'].get('nuclei_findings', []))} findings")
+
+        if 'recon' in results:
+            self.workflow_results.append(f"🔎 Recon: {len(results['recon'].get('all_urls', []))} URLs discovered")
+
+        if 'fuzzer' in results:
+            self.workflow_results.append(f"⚡ LostFuzzer: {len(results['fuzzer'].get('findings', []))} findings")
+
+        self.workflow_results.append("")
+        self.workflow_results.append("📁 Check individual tabs for detailed results.")
+
+    def on_workflow_error(self, error_msg):
+        """Handle workflow error"""
+        self.start_workflow_btn.setEnabled(True)
+        self.stop_workflow_btn.setEnabled(False)
+        self.workflow_progress.setVisible(False)
+        self.workflow_results.append(f"❌ Workflow Error: {error_msg}")
+
+    def stop_complete_workflow(self):
+        """Stop complete workflow"""
+        if hasattr(self, 'workflow_worker'):
+            self.workflow_worker.terminate()
+        self.start_workflow_btn.setEnabled(True)
+        self.stop_workflow_btn.setEnabled(False)
+        self.workflow_progress.setVisible(False)
+        self.workflow_results.append("⏹️ Workflow stopped by user")

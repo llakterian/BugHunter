@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bookmarklet Test Page</title>
+  <style>
+    body {
+      background-color: black;
+      color: #00ff88;
+      font-family: monospace;
+      padding: 20px;
+    }
+    input, button {
+      font-family: monospace;
+      margin-top: 5px;
+      margin-bottom: 20px;
+      padding: 5px;
+    }
+    .hidden {
+      display: none;
+    }
+    .grayed {
+      pointer-events: none;
+      opacity: 0.4;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bookmarklet Test Page</h1>
+
+  <h2>Disabled Input</h2>
+  <label>Email (Disabled):<br>
+    <input type="text" value="you@nowhere.com123" disabled>
+  </label>
+
+  <h2>Readonly Input</h2>
+  <label>Username (Readonly):<br>
+    <input type="text" value="readonly_user123" readonly>
+  </label>
+
+  <h2>Hidden Button</h2>
+  <button class="hidden" id="secret-btn">Secret Admin Button</button>
+
+  <h2>Grayed-Out Section</h2>
+  <div class="grayed">Premium Content</div>
+</body>
+</html>

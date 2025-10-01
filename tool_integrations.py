@@ -1,414 +1,204 @@
-#!/usr/bin/env python3
+
 """
-Tool Integrations - GAU, FFF, GF integration for enhanced reconnaissance
+Tool Integrations - Enhanced Reconnaissance and Automation
 """
 
-import os
 import subprocess
-import json
-import tempfile
-import shutil
-from typing import List, Dict, Optional
-from urllib.parse import urlparse, parse_qs
-import requests
-import time
-import re
+import os
 
 class ToolIntegrations:
-    def __init__(self):
-        self.temp_dir = tempfile.mkdtemp(prefix="bughunter_")
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'BugHunter-Pro/1.0 (Educational Use Only)'
-        })
-        
-    def __del__(self):
-        """Cleanup temporary directory"""
-        if hasattr(self, 'temp_dir') and os.path.exists(self.temp_dir):
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
-    
-    def check_tool_availability(self) -> Dict[str, bool]:
-        """Check if required tools are available"""
-        tools = {
-            'gau': self._check_command('gau'),
-            'fff': self._check_command('fff'),
-            'gf': self._check_command('gf'),
-            'curl': self._check_command('curl'),
-            'wget': self._check_command('wget')
-        }
-        return tools
-    
-    def _check_command(self, command: str) -> bool:
-        """Check if a command is available"""
+    def run_uro(self, target):
+        """Run Uro (URL deduplication/normalization) against a target."""
         try:
-            subprocess.run([command, '--help'], 
-                         capture_output=True, 
-                         timeout=5)
-            return True
-        except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.CalledProcessError):
-            return False
-    
-    def install_missing_tools(self) -> Dict[str, str]:
-        """Install missing tools (for educational environments)"""
+            result = subprocess.run(["uro", target], capture_output=True, text=True)
+            return result.stdout.splitlines()
+        except Exception as e:
+            return [f"Error running Uro: {e}"]
+    def install_missing_tools(self):
+        """Attempt to install missing tools using common package managers. Improved error handling and feedback."""
+        required_tools = ["gau", "fff", "gf", "uro", "nuclei"]
         results = {}
-        
-        # GAU installation
-        if not self._check_command('gau'):
+        for tool in required_tools:
+            # Check if tool is already installed
+            result = subprocess.run(["which", tool], capture_output=True, text=True)
+            if result.stdout.strip():
+                results[tool] = "Already installed"
+                continue
+            # Try installing with go install (assumes Go is installed)
             try:
-                subprocess.run([
-                    'go', 'install', 'github.com/lc/gau/v2/cmd/gau@latest'
-                ], check=True, capture_output=True)
-                results['gau'] = 'installed'
-            except:
-                results['gau'] = 'failed - install manually: go install github.com/lc/gau/v2/cmd/gau@latest'
-        
-        # FFF installation
-        if not self._check_command('fff'):
-            try:
-                subprocess.run([
-                    'go', 'install', 'github.com/tomnomnom/fff@latest'
-                ], check=True, capture_output=True)
-                results['fff'] = 'installed'
-            except:
-                results['fff'] = 'failed - install manually: go install github.com/tomnomnom/fff@latest'
-        
-        # GF installation
-        if not self._check_command('gf'):
-            try:
-                subprocess.run([
-                    'go', 'install', 'github.com/tomnomnom/gf@latest'
-                ], check=True, capture_output=True)
-                results['gf'] = 'installed'
-            except:
-                results['gf'] = 'failed - install manually: go install github.com/tomnomnom/gf@latest'
-        
-        return results
-    
-    def run_gau(self, target: str, include_subs: bool = True, 
-                providers: List[str] = None) -> List[str]:
-        """Run GAU (Get All URLs) against target"""
-        if not self._check_command('gau'):
-            raise Exception("GAU tool not available. Install with: go install github.com/lc/gau/v2/cmd/gau@latest")
-        
-        cmd = ['gau']
-        
-        if include_subs:
-            cmd.append('-subs')
-        
-        if providers:
-            cmd.extend(['-providers', ','.join(providers)])
-        
-        cmd.append(target)
-        
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-            if result.returncode == 0:
-                urls = [url.strip() for url in result.stdout.split('\n') if url.strip()]
-                return urls
-            else:
-                raise Exception(f"GAU failed: {result.stderr}")
-        except subprocess.TimeoutExpired:
-            raise Exception("GAU timed out after 5 minutes")
-    
-    def filter_js_urls(self, urls: List[str]) -> List[str]:
-        """Filter URLs to find JavaScript files"""
-        js_urls = []
-        js_patterns = [
-            r'\.js$',
-            r'\.json$',
-            r'\.jsx$',
-            r'\.ts$',
-            r'\.tsx$'
-        ]
-        
-        for url in urls:
-            # Remove query parameters for pattern matching
-            base_url = url.split('?')[0]
-            for pattern in js_patterns:
-                if re.search(pattern, base_url, re.IGNORECASE):
-                    js_urls.append(url)
-                    break
-        
-        return js_urls
-    
-    def run_fff(self, urls: List[str], status_codes: List[int] = None, 
-                output_dir: str = None) -> Dict[str, any]:
-        """Run FFF (Fuzzing for Files) against URLs"""
-        if not self._check_command('fff'):
-            raise Exception("FFF tool not available. Install with: go install github.com/tomnomnom/fff@latest")
-        
-        if not urls:
-            return {'error': 'No URLs provided'}
-        
-        # Create temporary file with URLs
-        urls_file = os.path.join(self.temp_dir, 'urls.txt')
-        with open(urls_file, 'w') as f:
-            f.write('\n'.join(urls))
-        
-        # Set up output directory
-        if not output_dir:
-            output_dir = os.path.join(self.temp_dir, 'fff_output')
-        
-        os.makedirs(output_dir, exist_ok=True)
-        
-        cmd = ['fff']
-        
-        if status_codes:
-            cmd.extend(['-s', ','.join(map(str, status_codes))])
-        else:
-            cmd.extend(['-s', '200'])
-        
-        cmd.extend(['-o', output_dir])
-        
-        try:
-            # Run fff with URLs from file
-            with open(urls_file, 'r') as f:
-                result = subprocess.run(cmd, stdin=f, capture_output=True, 
-                                      text=True, timeout=600)
-            
-            if result.returncode == 0:
-                # Parse results
-                results = self._parse_fff_output(output_dir)
-                return {
-                    'success': True,
-                    'results': results,
-                    'output_dir': output_dir
-                }
-            else:
-                return {
-                    'success': False,
-                    'error': result.stderr,
-                    'output_dir': output_dir
-                }
-        except subprocess.TimeoutExpired:
-            return {
-                'success': False,
-                'error': 'FFF timed out after 10 minutes',
-                'output_dir': output_dir
-            }
-    
-    def _parse_fff_output(self, output_dir: str) -> Dict[str, any]:
-        """Parse FFF output directory"""
-        results = {
-            'files_found': 0,
-            'responses': [],
-            'errors': []
-        }
-        
-        try:
-            for filename in os.listdir(output_dir):
-                filepath = os.path.join(output_dir, filename)
-                if os.path.isfile(filepath):
-                    results['files_found'] += 1
-                    try:
-                        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                            content = f.read()
-                            results['responses'].append({
-                                'filename': filename,
-                                'size': len(content),
-                                'content_preview': content[:500] + '...' if len(content) > 500 else content
-                            })
-                    except Exception as e:
-                        results['errors'].append(f"Error reading {filename}: {str(e)}")
-        except Exception as e:
-            results['errors'].append(f"Error parsing output directory: {str(e)}")
-        
-        return results
-    
-    def run_gf_secrets(self, content_dir: str) -> Dict[str, List[str]]:
-        """Run GF patterns to find secrets"""
-        if not self._check_command('gf'):
-            raise Exception("GF tool not available. Install with: go install github.com/tomnomnom/gf@latest")
-        
-        secrets_found = {}
-        
-        try:
-            # Get list of available GF patterns
-            result = subprocess.run(['gf', '-list'], capture_output=True, text=True)
-            if result.returncode != 0:
-                return {'error': 'Failed to get GF patterns list'}
-            
-            patterns = result.stdout.strip().split('\n')
-            secret_patterns = [p for p in patterns if 'secret' in p.lower() or 
-                             'key' in p.lower() or 'token' in p.lower() or 
-                             'password' in p.lower() or 'credential' in p.lower()]
-            
-            # Run each secret pattern
-            for pattern in secret_patterns:
-                try:
-                    # Find all files in content directory
-                    files_to_scan = []
-                    for root, dirs, files in os.walk(content_dir):
-                        for file in files:
-                            files_to_scan.append(os.path.join(root, file))
-                    
-                    if files_to_scan:
-                        # Run gf pattern on files
-                        cmd = ['gf', pattern] + files_to_scan
-                        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-                        
-                        if result.returncode == 0 and result.stdout.strip():
-                            secrets_found[pattern] = result.stdout.strip().split('\n')
-                
-                except subprocess.TimeoutExpired:
-                    secrets_found[pattern] = ['Timeout occurred']
-                except Exception as e:
-                    secrets_found[pattern] = [f'Error: {str(e)}']
-        
-        except Exception as e:
-            return {'error': f'GF execution failed: {str(e)}'}
-        
-        return secrets_found
-    
-    def comprehensive_url_discovery(self, target: str) -> Dict[str, any]:
-        """Comprehensive URL discovery using GAU + filtering"""
-        results = {
-            'target': target,
-            'total_urls': 0,
-            'js_urls': 0,
-            'parameter_urls': 0,
-            'endpoints_found': [],
-            'parameters_found': set(),
-            'errors': []
-        }
-        
-        try:
-            # Step 1: Run GAU
-            print(f"🔍 Running GAU against {target}...")
-            all_urls = self.run_gau(target, include_subs=True)
-            results['total_urls'] = len(all_urls)
-            
-            # Step 2: Filter JavaScript URLs
-            js_urls = self.filter_js_urls(all_urls)
-            results['js_urls'] = len(js_urls)
-            
-            # Step 3: Find URLs with parameters
-            param_urls = [url for url in all_urls if '?' in url]
-            results['parameter_urls'] = len(param_urls)
-            
-            # Step 4: Extract parameters
-            for url in param_urls:
-                parsed = urlparse(url)
-                if parsed.query:
-                    params = parse_qs(parsed.query)
-                    for param in params.keys():
-                        results['parameters_found'].add(param)
-            
-            # Step 5: Identify interesting endpoints
-            interesting_patterns = [
-                'admin', 'login', 'upload', 'download', 'api', 'config',
-                'backup', 'debug', 'test', 'dev', 'staging', 'internal'
-            ]
-            
-            for url in all_urls:
-                for pattern in interesting_patterns:
-                    if pattern in url.lower():
-                        results['endpoints_found'].append(url)
-                        break
-            
-            results['parameters_found'] = list(results['parameters_found'])
-            
-        except Exception as e:
-            results['errors'].append(f"URL discovery failed: {str(e)}")
-        
-        return results
-    
-    def automated_secrets_hunting(self, target: str) -> Dict[str, any]:
-        """Automated secrets hunting workflow"""
-        results = {
-            'target': target,
-            'urls_discovered': 0,
-            'files_analyzed': 0,
-            'secrets_found': {},
-            'high_value_findings': [],
-            'errors': []
-        }
-        
-        try:
-            # Step 1: URL Discovery
-            print("🔍 Phase 1: URL Discovery...")
-            discovery_results = self.comprehensive_url_discovery(target)
-            results['urls_discovered'] = discovery_results['total_urls']
-            
-            if discovery_results['errors']:
-                results['errors'].extend(discovery_results['errors'])
-            
-            # Step 2: Get JavaScript URLs for analysis
-            all_urls = self.run_gau(target, include_subs=True)
-            js_urls = self.filter_js_urls(all_urls)
-            
-            if js_urls:
-                print(f"📁 Phase 2: Analyzing {len(js_urls)} JavaScript files...")
-                
-                # Step 3: Use FFF to fetch responses
-                fff_results = self.run_fff(js_urls[:50])  # Limit to first 50 for performance
-                
-                if fff_results.get('success'):
-                    results['files_analyzed'] = fff_results['results']['files_found']
-                    
-                    # Step 4: Run GF secrets scanning
-                    print("🔐 Phase 3: Secrets scanning...")
-                    secrets = self.run_gf_secrets(fff_results['output_dir'])
-                    results['secrets_found'] = secrets
-                    
-                    # Step 5: Identify high-value findings
-                    high_value_patterns = ['api_key', 'secret', 'token', 'password', 'credential']
-                    for pattern, findings in secrets.items():
-                        if any(hv in pattern.lower() for hv in high_value_patterns):
-                            if findings and findings != ['Timeout occurred']:
-                                results['high_value_findings'].extend(findings)
-                
+                if tool == "gau":
+                    install_cmd = "go install github.com/lc/gau/v2/cmd/gau@latest"
+                elif tool == "fff":
+                    install_cmd = "go install github.com/tomnomnom/fff@latest"
+                elif tool == "gf":
+                    install_cmd = "go install github.com/tomnomnom/gf@latest"
+                elif tool == "uro":
+                    install_cmd = "pip install uro"
+                elif tool == "nuclei":
+                    install_cmd = "go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest"
                 else:
-                    results['errors'].append(f"FFF analysis failed: {fff_results.get('error', 'Unknown error')}")
-            
-        except Exception as e:
-            results['errors'].append(f"Automated secrets hunting failed: {str(e)}")
-        
+                    results[tool] = "Unknown tool"
+                    continue
+                proc = subprocess.run(install_cmd, shell=True, capture_output=True, text=True)
+                if proc.returncode == 0:
+                    # Check if tool is now in PATH
+                    result_check = subprocess.run(["which", tool], capture_output=True, text=True)
+                    if result_check.stdout.strip():
+                        results[tool] = "Installed successfully"
+                    else:
+                        results[tool] = "Installed, but not found in PATH. Add $GOPATH/bin to your PATH."
+                else:
+                    results[tool] = f"Install failed: {proc.stderr.strip()}"
+            except Exception as e:
+                results[tool] = f"Error: {e}"
         return results
-    
-    def generate_custom_wordlist(self, target: str, discovered_params: List[str]) -> List[str]:
-        """Generate custom wordlist based on discovered parameters and target"""
-        from enhanced_wordlists import get_all_parameters, get_all_endpoints
-        
-        custom_wordlist = []
-        
-        # Add discovered parameters
-        custom_wordlist.extend(discovered_params)
-        
-        # Add standard parameters
-        custom_wordlist.extend(get_all_parameters())
-        
-        # Add endpoints
-        custom_wordlist.extend(get_all_endpoints())
-        
-        # Add target-specific variations
-        domain_parts = target.replace('http://', '').replace('https://', '').split('.')
-        for part in domain_parts:
-            if len(part) > 2:
-                custom_wordlist.extend([
-                    f"{part}_api",
-                    f"{part}_admin",
-                    f"{part}_config",
-                    f"{part}_backup",
-                    f"{part}_test"
-                ])
-        
-        # Remove duplicates and return
-        return list(set(custom_wordlist))
 
-# Example usage and testing
-if __name__ == "__main__":
-    tools = ToolIntegrations()
-    
-    # Check tool availability
-    available = tools.check_tool_availability()
-    print("Tool Availability:")
-    for tool, status in available.items():
-        print(f"  {tool}: {'✅' if status else '❌'}")
-    
-    # Install missing tools (if in appropriate environment)
-    if not all(available.values()):
-        print("\n🔧 Installing missing tools...")
-        install_results = tools.install_missing_tools()
-        for tool, result in install_results.items():
-            print(f"  {tool}: {result}")
+    def install_gf_patterns(self):
+        """Install GF patterns from GitHub repository."""
+        gf_patterns_repo = "https://github.com/coffinxp/GFpattren"
+        gf_patterns_dir = os.path.expanduser("~/.gf")
+
+        try:
+            # Create .gf directory if it doesn't exist
+            os.makedirs(gf_patterns_dir, exist_ok=True)
+
+            # Clone or pull the patterns repo
+            if os.path.exists(os.path.join(gf_patterns_dir, ".git")):
+                # Update existing repo
+                result = subprocess.run(["git", "-C", gf_patterns_dir, "pull"], capture_output=True, text=True)
+            else:
+                # Clone new repo
+                result = subprocess.run(["git", "clone", gf_patterns_repo, gf_patterns_dir], capture_output=True, text=True)
+
+            if result.returncode == 0:
+                return {"status": "GF patterns installed/updated successfully", "path": gf_patterns_dir}
+            else:
+                return {"error": f"Failed to install GF patterns: {result.stderr}"}
+        except Exception as e:
+            return {"error": f"Error installing GF patterns: {e}"}
+    def check_tool_availability(self):
+        """Check if required external tools are available in PATH."""
+        required_tools = ["gau", "fff", "gf", "uro", "nuclei", "shef"]
+        status = {}
+        for tool in required_tools:
+            result = subprocess.run(["which", tool], capture_output=True, text=True)
+            status[tool] = bool(result.stdout.strip())
+        return status
+    """Integrates external tools for reconnaissance and automation."""
+
+    def run_recon_automation(self, target, virustotal_api_key=None):
+        """Aggregate URLs from Wayback, AlienVault OTX, URLScan, VirusTotal."""
+        try:
+            from recon_automation import ReconAutomation
+            recon = ReconAutomation()
+            results = recon.aggregate_recon_urls(target, virustotal_api_key=virustotal_api_key)
+            return results
+        except Exception as e:
+            return {'error': str(e)}
+
+    def run_gau(self, target):
+        """Run GAU (GetAllURLs) against a target."""
+        try:
+            result = subprocess.run(["gau", target], capture_output=True, text=True)
+            return result.stdout.splitlines()
+        except Exception as e:
+            return [f"Error running GAU: {e}"]
+
+    def run_fff(self, target):
+        """Run FFF (Fast File Finder) against a target."""
+        try:
+            result = subprocess.run(["fff", target], capture_output=True, text=True)
+            return result.stdout.splitlines()
+        except Exception as e:
+            return [f"Error running FFF: {e}"]
+
+    def run_gf(self, target):
+        """Run GF (Grep for patterns) against a target."""
+        try:
+            result = subprocess.run(["gf", target], capture_output=True, text=True)
+            return result.stdout.splitlines()
+        except Exception as e:
+            return [f"Error running GF: {e}"]
+
+    def filter_urls_with_gf(self, url_file, patterns, output_dir="temp"):
+        """Filter URLs using GF patterns and deduplicate with Uro."""
+        os.makedirs(output_dir, exist_ok=True)
+        results = {}
+
+        for pattern in patterns:
+            try:
+                # Run gf on the URL file
+                gf_cmd = f"cat {url_file} | gf {pattern}"
+                gf_result = subprocess.run(gf_cmd, shell=True, capture_output=True, text=True)
+
+                if gf_result.returncode == 0 and gf_result.stdout.strip():
+                    # Deduplicate with uro
+                    uro_cmd = f"echo '{gf_result.stdout}' | uro"
+                    uro_result = subprocess.run(uro_cmd, shell=True, capture_output=True, text=True)
+
+                    if uro_result.returncode == 0:
+                        unique_urls = uro_result.stdout.strip().split('\n')
+                        output_file = os.path.join(output_dir, f"unique_{pattern}_targets.txt")
+                        with open(output_file, 'w') as f:
+                            f.write('\n'.join(unique_urls))
+                        results[pattern] = {
+                            "count": len(unique_urls),
+                            "file": output_file,
+                            "urls": unique_urls
+                        }
+                    else:
+                        results[pattern] = {"error": f"Uro failed: {uro_result.stderr}"}
+                else:
+                    results[pattern] = {"count": 0, "urls": []}
+            except Exception as e:
+                results[pattern] = {"error": str(e)}
+
+        return results
+
+    def comprehensive_url_discovery(self, target):
+        """Run GAU and FFF for real URL and parameter discovery."""
+        endpoints = self.run_gau(target)
+        files = self.run_fff(target)
+        uro_urls = self.run_uro(target)
+        # Use custom wordlists if available
+        custom_endpoints = []
+        try:
+            with open('wordlists/endpoints.txt') as f:
+                custom_endpoints = [line.strip() for line in f if line.strip()]
+        except Exception:
+            pass
+        all_urls = list(set(endpoints + files + uro_urls + custom_endpoints))
+        # Extract parameters from all URLs
+        parameters = []
+        for url in all_urls:
+            if '?' in url:
+                param_str = url.split('?', 1)[1]
+                for param in param_str.split('&'):
+                    param_name = param.split('=')[0]
+                    if param_name and param_name not in parameters:
+                        parameters.append(param_name)
+        results = {
+            'endpoints_found': all_urls,
+            'parameters_found': parameters,
+            'total_urls': len(all_urls),
+            'js_urls': len([u for u in all_urls if u.endswith('.js')]),
+            'parameter_urls': len([u for u in all_urls if '?' in u])
+        }
+        return results
+
+    def automated_secrets_hunting(self, target):
+        """Run GF for secrets hunting and parse results."""
+        patterns = ['aws-keys', 'apikey', 'authorization', 'password', 'secret', 'token']
+        secrets_found = {}
+        high_value_findings = []
+        for pattern in patterns:
+            output = self.run_gf(f"{pattern} {target}")
+            findings = [line for line in output if line and not line.startswith('Error')]
+            secrets_found[pattern] = findings
+            if findings:
+                high_value_findings.extend(findings)
+        results = {
+            'secrets_found': secrets_found,
+            'high_value_findings': high_value_findings
+        }
+        return results

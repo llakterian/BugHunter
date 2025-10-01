@@ -1,0 +1,60 @@
+[INFO] Starting OWASP ZAP daemon...
+[ERROR] Failed to start ZAP daemon
+[INFO] Connecting to OWASP ZAP...
+[ERROR] Failed to connect to ZAP
+[INFO] Preparing scan for https://testphp.vulnweb.com
+[SUCCESS] 🚀 ADVANCED BUG BOUNTY SCANNER INITIALIZED
+[INFO] 🎯 Features: Auto-validation, Auto-exploitation, Login testing, Data extraction
+[SUCCESS] ⚡ Ready for professional bug bounty hunting!
+[INFO] 🎯 Starting ADVANCED bug hunt on https://testphp.vulnweb.com
+[INFO] 🚀 Features: Auto-validation, Auto-exploitation, Login testing
+[INFO] 🎯 INITIATING ADVANCED BUG BOUNTY SCAN: https://testphp.vulnweb.com
+[WARNING] ⚠️ Quick connectivity test failed: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=10)'))
+[WARNING] ⚠️ Full connectivity test failed: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=10)'))
+[WARNING] ⚠️ Options method test failed: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=10)'))
+[WARNING] ⚠️ Target may be unreachable, but proceeding with scan
+[WARNING] ⚠️ Reconnaissance error: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=15)'))
+[INFO] ⚙️ Scan optimized for None target
+[INFO] 📚 Wordlists loaded: 1458 total entries across 5 categories
+[INFO] 📊 SCAN MATRIX: 1177 operations across 1 modules
+[INFO] 🔍 PHASE 2: Intelligent Directory Fuzzing
+[WARNING] ⚠️ Wordlist adaptation failed: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=10)'))
+[INFO] 🔍 Intelligent fuzzing: 92 paths
+[INFO] 🔍 Directory fuzzing completed: 0 paths discovered
+[INFO] 🔐 PHASE 3: Admin Panel & Sensitive Endpoint Discovery
+[INFO] 🔐 Testing 585 admin endpoints
+[INFO] Connecting to OWASP ZAP...
+[INFO] Successfully connected to ZAP
+[INFO] Scan stopped by user
+[SUCCESS] 🎉 Bug hunting completed! Found 0 results and 0 vulnerabilities
+[INFO] 🔐 Admin discovery completed: 0 panels found
+[SUCCESS] 🎯 SCAN COMPLETE: https://testphp.vulnweb.com ⏱️ Duration: 1606.47 seconds 🔍 Operations: 1177 🚨 Vulnerabilities: 0 📊 Rate: 0.7 ops/sec
+[SUCCESS] 🎉 Bug hunting completed! Found 0 results and 0 vulnerabilities
+[INFO] Starting OWASP ZAP daemon...
+[INFO] ZAP daemon started successfully
+[INFO] Starting OWASP ZAP daemon...
+[INFO] ZAP daemon started successfully
+[INFO] Starting spider scan on https://testphp.vulnweb.com
+[INFO] Starting active scan on https://testphp.vulnweb.com
+[INFO] Preparing scan for https://testphp.vulnweb.com
+[SUCCESS] 🚀 ADVANCED BUG BOUNTY SCANNER INITIALIZED
+[INFO] 🎯 Features: Auto-validation, Auto-exploitation, Login testing, Data extraction
+[SUCCESS] ⚡ Ready for professional bug bounty hunting!
+[INFO] 🎯 Starting ADVANCED bug hunt on https://testphp.vulnweb.com
+[INFO] 🚀 Features: Auto-validation, Auto-exploitation, Login testing
+[INFO] 🎯 INITIATING ADVANCED BUG BOUNTY SCAN: https://testphp.vulnweb.com
+[WARNING] ⚠️ Quick connectivity test failed: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=10)'))
+[WARNING] ⚠️ Full connectivity test failed: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=10)'))
+[WARNING] ⚠️ Options method test failed: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=10)'))
+[WARNING] ⚠️ Target may be unreachable, but proceeding with scan
+[WARNING] ⚠️ Reconnaissance error: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=15)'))
+[INFO] ⚙️ Scan optimized for None target
+[INFO] 📚 Wordlists loaded: 1458 total entries across 5 categories
+[INFO] 📊 SCAN MATRIX: 1380 operations across 2 modules
+[INFO] 🌐 PHASE 1: Advanced Subdomain Enumeration
+[INFO] 🌐 Testing 203 subdomains for testphp.vulnweb.com
+[INFO] 🌐 Subdomain enumeration completed: 0 subdomains discovered
+[INFO] 🔍 PHASE 2: Intelligent Directory Fuzzing
+[WARNING] ⚠️ Wordlist adaptation failed: HTTPSConnectionPool(host='testphp.vulnweb.com', port=443): Max retries exceeded with url: / (Caused by ConnectTimeoutError(, 'Connection to testphp.vulnweb.com timed out. (connect timeout=10)'))
+[INFO] 🔍 Intelligent fuzzing: 92 paths
+

@@ -6,6 +6,8 @@ import json
 import os
 import bcrypt
 import hashlib
+import secrets
+import string
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
@@ -42,13 +44,25 @@ class AuthManager:
         except Exception as e:
             print(f"Error saving users: {e}")
     
+    def generate_random_password(self, length=16):
+        """Generate a secure random password"""
+        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+        return ''.join(secrets.choice(alphabet) for _ in range(length))
+
     def create_default_admin(self):
         """Create default admin user if no users exist"""
         if not self.users:
-            # Default admin credentials
-            admin_password = "BugHunter2024!"
+            # Generate secure random password
+            admin_password = self.generate_random_password()
             self.create_user("admin", admin_password, "admin", "Default Administrator")
-            print(f"Default admin created - Username: admin, Password: {admin_password}")
+            print("=" * 60)
+            print("🔐 DEFAULT ADMIN ACCOUNT CREATED")
+            print("=" * 60)
+            print(f"Username: admin")
+            print(f"Password: {admin_password}")
+            print("=" * 60)
+            print("⚠️  IMPORTANT: Please save these credentials and change the password after first login!")
+            print("=" * 60)
     
     def hash_password(self, password: str) -> str:
         """Hash password using bcrypt"""
